@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import LanguageSwitcher from "../components/LanguageSwitcher.jsx";
+import GoogleIcon from "../components/icons/GoogleIcon.jsx";
 
 const API = import.meta.env.VITE_API_URL || "http://localhost:8000/api";
 
@@ -83,6 +84,33 @@ export default function Signup() {
     if (!allPwOk) return t("password_requirements_title");
     if (logoMeta.error) return logoMeta.error;
     return "";
+  };
+
+  useEffect(() => {
+    const handler = (ev) => {
+      if (ev.data?.type === "google-auth-result") {
+        const { payload } = ev.data;
+        if (payload?.token) {
+          localStorage.setItem("token", payload.token);
+          location.href = "/";
+        } else if (payload?.errors) {
+          alert(payload.errors.map((code) => t(`errors.${code}`)).join("\n"));
+        } else {
+          alert(t("errors.1999"));
+        }
+      }
+    };
+    window.addEventListener("message", handler);
+    return () => window.removeEventListener("message", handler);
+  }, [t]);
+
+  const loginGoogle = () => {
+    // open popup to backend redirect endpoint
+    window.open(
+      `${API}/auth/google/redirect`,
+      "google",
+      "width=520,height=640"
+    );
   };
 
   const submit = async (e) => {
@@ -241,6 +269,16 @@ export default function Signup() {
             <a className="text-blue-600 underline" href="/login">
               {t("login")}
             </a>
+            <div className="mt-4 text-center">
+              <button
+                type="button"
+                onClick={loginGoogle}
+                className="flex items-center justify-center w-full gap-2 border border-gray-300 rounded py-2 hover:bg-gray-50 transition-colors"
+              >
+                <GoogleIcon size={18} />
+                <span>{t("sign_in_google")}</span>
+              </button>
+            </div>
           </div>
         </form>
       </div>

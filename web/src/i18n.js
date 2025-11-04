@@ -35,6 +35,7 @@ const resources = {
       invalid_image_file: "Invalid image file",
       logo_too_big: "Logo must be ≤ 2 MB",
       logo_too_large_resolution: "Logo must be ≤ 1024×1024 px",
+      sign_in_google: "Sign in with Google",
 
       errors: {
         1000: "This field is required.",
@@ -45,10 +46,12 @@ const resources = {
         1005: "File is too large.",
         1006: "Image resolution is too high.",
         1999: "An unexpected error occurred.",
+        1100: "Google sign-in failed.",
+        1101: "Google did not provide an email for this account.",
       },
 
       // Misc
-      or_signin: "Or sign in",
+      or_signin: "Or",
     },
   },
   th: {
@@ -82,6 +85,7 @@ const resources = {
       invalid_image_file: "ไฟล์รูปภาพไม่ถูกต้อง",
       logo_too_big: "โลโก้ต้องมีขนาด ≤ 2 MB",
       logo_too_large_resolution: "โลโก้ต้องมีความละเอียด ≤ 1024×1024 พิกเซล",
+      sign_in_google: "เข้าสู่ระบบด้วย Google",
 
       errors: {
         1000: "จำเป็นต้องกรอกข้อมูล",
@@ -92,9 +96,11 @@ const resources = {
         1005: "ไฟล์มีขนาดใหญ่เกินไป",
         1006: "ความละเอียดของรูปภาพสูงเกินไป",
         1999: "เกิดข้อผิดพลาดที่ไม่คาดคิด",
+        1100: "ไม่สามารถเข้าสู่ระบบด้วย Google ได้",
+        1101: "บัญชี Google นี้ไม่มีอีเมลแนบมา",
       },
 
-      or_signin: "หรือ เข้าสู่ระบบ",
+      or_signin: "หรือ",
     },
   },
 };
