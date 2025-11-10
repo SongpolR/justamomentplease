@@ -79,6 +79,43 @@ const resources = {
       invite_expired: "The invite link has expired.",
       invite_used: "This invite link was already used.",
 
+      // ----- General -----
+      logout: "Logout",
+      loading: "Loading...",
+      invalid_email: "Invalid email format",
+
+      // ----- Owner Dashboard -----
+      owner_dashboard: "Owner Dashboard",
+      shop_name: "Shop Name",
+      invite_staff: "Invite Staff",
+      staff_list: "Staff List",
+      staff_name: "Staff Name",
+      staff_email: "Staff Email",
+      send_invite: "Send Invite",
+      resend_invite: "Resend Invite",
+      invite_sent: "Invitation email sent successfully.",
+      invite_resent: "Invitation email resent successfully.",
+      reset_password: "Reset Password",
+      reset_link_sent: "Password reset link sent successfully.",
+      staff_deactivated: "Staff deactivated successfully.",
+      confirm_deactivate: "Are you sure you want to deactivate this staff?",
+      actions: "Actions",
+      status: "Status",
+      active: "Active",
+      inactive: "Inactive",
+      no_staff: "No staff members found.",
+
+      // ----- Staff Dashboard -----
+      staff_dashboard: "Staff Dashboard",
+      welcome_staff: "Welcome",
+      staff_dashboard_intro:
+        "This is your workspace. Here you will be able to create orders, mark them ready, and see live updates in real time.",
+      coming_soon: "Coming soon",
+      feature_create_order: "Create new order with one tap",
+      feature_mark_ready: "Mark orders ready & done",
+      feature_live_updates: "Live queue updates (Socket.IO)",
+      feature_sound_vibration: "Customer sound & vibration alerts",
+
       // ===== Numeric error codes → user messages =====
       errors: {
         1000: "This field is required.",
@@ -177,6 +214,32 @@ const resources = {
       invite_expired: "ลิงก์คำเชิญหมดอายุ",
       invite_used: "ลิงก์คำเชิญถูกใช้งานแล้ว",
 
+      // ----- General -----
+      logout: "ออกจากระบบ",
+      loading: "กำลังโหลด...",
+      invalid_email: "รูปแบบอีเมลไม่ถูกต้อง",
+
+      // ----- Owner Dashboard -----
+      owner_dashboard: "แดชบอร์ดเจ้าของร้าน",
+      shop_name: "ชื่อร้าน",
+      invite_staff: "เชิญพนักงาน",
+      staff_list: "รายชื่อพนักงาน",
+      staff_name: "ชื่อพนักงาน",
+      staff_email: "อีเมลพนักงาน",
+      send_invite: "ส่งคำเชิญ",
+      resend_invite: "ส่งคำเชิญอีกครั้ง",
+      invite_sent: "ส่งอีเมลคำเชิญเรียบร้อยแล้ว",
+      invite_resent: "ส่งอีเมลคำเชิญอีกครั้งเรียบร้อยแล้ว",
+      reset_password: "รีเซ็ตรหัสผ่าน",
+      reset_link_sent: "ส่งลิงก์รีเซ็ตรหัสผ่านเรียบร้อยแล้ว",
+      staff_deactivated: "ปิดการใช้งานพนักงานเรียบร้อยแล้ว",
+      confirm_deactivate: "คุณแน่ใจหรือไม่ว่าต้องการปิดการใช้งานพนักงานคนนี้?",
+      actions: "การทำงาน",
+      status: "สถานะ",
+      active: "เปิดใช้งาน",
+      inactive: "ปิดใช้งาน",
+      no_staff: "ยังไม่มีพนักงานในร้าน",
+
       // ===== Numeric error codes → user messages =====
       errors: {
         1000: "จำเป็นต้องกรอกข้อมูล",
@@ -199,6 +262,17 @@ const resources = {
         1402: "คำเชิญถูกใช้งานแล้ว",
         1999: "เกิดข้อผิดพลาดที่ไม่คาดคิด",
       },
+
+      // ----- Staff Dashboard -----
+      staff_dashboard: "แดชบอร์ดพนักงาน",
+      welcome_staff: "ยินดีต้อนรับ",
+      staff_dashboard_intro:
+        "นี่คือพื้นที่ทำงานของคุณ คุณจะสามารถสร้างออเดอร์ แจ้งพร้อมเสิร์ฟ และดูสถานะออเดอร์แบบเรียลไทม์ได้ที่นี่",
+      coming_soon: "เร็วๆ นี้",
+      feature_create_order: "สร้างออเดอร์ใหม่ได้ในคลิกเดียว",
+      feature_mark_ready: "เปลี่ยนสถานะออเดอร์เป็นพร้อมเสิร์ฟ / เสร็จสิ้น",
+      feature_live_updates: "อัปเดตคิวแบบเรียลไทม์ (Socket.IO)",
+      feature_sound_vibration: "เสียงแจ้งเตือนและการสั่นสำหรับลูกค้า",
     },
   },
 };
