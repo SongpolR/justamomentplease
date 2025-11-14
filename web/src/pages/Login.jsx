@@ -72,8 +72,8 @@ export default function Login() {
     const { token } = await r.json();
     localStorage.setItem("token", token);
     localStorage.setItem("tokenType", mode); // 'owner' | 'staff'
-    // Land on appropriate dashboard
-    location.href = mode === "owner" ? "/" : "/staff";
+    // Shared landing: Orders
+    location.href = "/orders";
   };
 
   return (

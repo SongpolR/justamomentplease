@@ -1,9 +1,10 @@
+// web/src/pages/ShopSettings.jsx
 import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 const API = import.meta.env.VITE_API_URL || "http://localhost:8000/api";
 
-export default function Dashboard() {
+export default function ShopSettings() {
   const { t } = useTranslation();
   const token = localStorage.getItem("token");
   const [shop, setShop] = useState(null);
@@ -14,7 +15,7 @@ export default function Dashboard() {
   const [message, setMessage] = useState(null);
   const [error, setError] = useState(null);
 
-  // ---------- Fetch Shop & Staff ----------
+  // Fetch shop + staff
   useEffect(() => {
     const fetchAll = async () => {
       try {
@@ -34,13 +35,6 @@ export default function Dashboard() {
     fetchAll();
   }, []);
 
-  // ---------- Logout ----------
-  const logout = () => {
-    localStorage.clear();
-    location.href = "/login";
-  };
-
-  // ---------- Invite Staff ----------
   const inviteStaff = async () => {
     setMessage(null);
     setError(null);
@@ -72,7 +66,6 @@ export default function Dashboard() {
     }
   };
 
-  // ---------- Resend Invite ----------
   const resendInvite = async (email) => {
     setMessage(null);
     try {
@@ -90,7 +83,6 @@ export default function Dashboard() {
     }
   };
 
-  // ---------- Reset Password ----------
   const resetStaffPassword = async (email) => {
     setMessage(null);
     try {
@@ -105,7 +97,6 @@ export default function Dashboard() {
     }
   };
 
-  // ---------- Deactivate Staff ----------
   const deactivateStaff = async (id) => {
     if (!confirm(t("confirm_deactivate"))) return;
     setMessage(null);
@@ -127,22 +118,18 @@ export default function Dashboard() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen text-gray-600">
+      <div className="flex items-center justify-center min-h-[60vh] text-gray-600">
         {t("loading")}
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6 relative">
-      <button
-        onClick={logout}
-        className="absolute top-4 right-4 text-sm underline text-gray-600 hover:text-black"
-      >
-        {t("logout")}
-      </button>
+    <div className="mt-4">
+      <h1 className="text-2xl font-bold">
+        {t("shop_settings_title") || t("owner_dashboard")}
+      </h1>
 
-      <h1 className="text-2xl font-bold">{t("owner_dashboard")}</h1>
       {shop && (
         <div className="mt-2 text-gray-700">
           <div>
@@ -158,7 +145,6 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* Messages */}
       {message && (
         <div className="mt-4 bg-green-50 border border-green-300 text-green-800 p-3 rounded">
           {message}
