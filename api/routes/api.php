@@ -83,6 +83,6 @@ Route::middleware('any')->group(function () {
   // Orders (create → ready → done)
   Route::get('/orders',                        [OrderController::class, 'index']);
   Route::post('/orders',                       [OrderController::class, 'store']);  // applies daily reset policy
-  Route::post('/orders/{orderNo}/ready',       [OrderController::class, 'ready']);
-  Route::post('/orders/{orderNo}/done',        [OrderController::class, 'done']);
+  Route::post('/orders/{orderId}/ready',       [OrderController::class, 'ready']);
+  Route::post('/orders/{orderId}/done',        [OrderController::class, 'done']);
 });

@@ -44,5 +44,9 @@ return [
     'INVITE_INVALID'      => 1400,
     'INVITE_EXPIRED'      => 1401,
     'INVITE_USED'         => 1402,
-    'INVITE_PENDING'      => 1403
+    'INVITE_PENDING'      => 1403,
+
+    'ORDER_INVALID_TRANSITION' => 1500,
+    'ORDER_NOT_FOUND'          => 1501,
+    'ORDER_NUMBERING_FAILED'   => 1502,
 ];
