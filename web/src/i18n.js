@@ -1,293 +1,290 @@
 // web/src/i18n.js
 import i18n from "i18next";
 import { initReactI18next } from "react-i18next";
-import LanguageDetector from "i18next-browser-languagedetector";
 
-const resources = {
-  en: {
-    translation: {
-      // ===== Common labels =====
-      app_title: "Virtual Pager",
-      health_ok: "All systems are go",
-      login_type_owner: "Owner",
-      login_type_staff: "Staff",
-      login: "Login",
-      signup: "Sign up",
-      or_signin: "Already have an account?",
-      create_account: "Create account",
-      your_name: "Your name",
-      email: "Email",
-      password: "Password",
-      confirm_password: "Confirm password",
-      shop_name: "Shop name",
-      shop_logo: "Shop logo",
-      preview: "Preview",
-      sign_in_google: "Sign in with Google",
-      email_address: "Email address",
-      resend_link: "Resend verification link",
-      open_email_app: "Open email app",
-      back_to_login: "Back to Login",
-      verify_now: "Verify now",
-      reset_password: "Reset password",
-      reset_password_success: "Reset password successfully, continue to login",
-      continue_login: "Continue to login",
-      set_password: "Set password",
+const savedLang = localStorage.getItem("lang") || "en";
 
-      // ===== Field requirements / helper text =====
-      field_requirements: "Requirements",
-      logo_requirements_title: "Logo requirements",
-      logo_req_size: "File size ≤ 2 MB",
-      logo_req_resolution: "Resolution ≤ 1024×1024 px",
-      logo_req_types: "PNG / JPG / JPEG",
-      password_requirements_title: "Password requirements",
-      pw_req_length: "At least 8 characters",
-      pw_req_upper: "At least 1 uppercase letter (A–Z)",
-      pw_req_number: "At least 1 number (0–9)",
-      pw_req_chars:
-        "Allowed characters: letters, numbers, ! @ # $ % ^ & * . _ -",
-      pw_req_match: "Password and confirmation password matched",
-      password_ok: "Password looks good!",
-      invalid_image_file: "Invalid image file",
-      logo_too_big: "Logo must be ≤ 2 MB",
-      logo_too_large_resolution: "Logo must be ≤ 1024×1024 px",
-      password_rule: "8+ chars, 1 uppercase, 1 number",
+i18n.use(initReactI18next).init({
+  lng: savedLang,
+  fallbackLng: "en",
+  interpolation: { escapeValue: false },
 
-      // ===== Login inline error messages (owner mode) =====
-      login_error_unverified: "Please verify your email to continue.",
-      login_error_bad_password: "Incorrect password.",
-      login_error_no_account: "We couldn't find an account with that email.",
+  resources: {
+    /* ------------------------------------------------------------------
+     * ENGLISH
+     * ------------------------------------------------------------------ */
+    en: {
+      translation: {
+        /* ---------- General ---------- */
+        loading: "Loading...",
+        logout: "Logout",
+        email: "Email",
+        password: "Password",
+        name: "Name",
+        actions: "Actions",
+        status: "Status",
+        active: "Active",
+        inactive: "Inactive",
+        invalid_email: "Invalid email format",
+        confirm: "Confirm",
+        cancel: "Cancel",
+        back: "Back",
 
-      // ===== Login inline error messages (staff mode) =====
-      login_staff_contact_owner: "Please contact your shop owner.",
-      login_staff_not_found: "We couldn’t find a staff account for this email.",
-      login_staff_inactive: "Your staff account is disabled.",
-      login_staff_bad_password: "Incorrect password.",
-      switch_to_owner_login: "Switch to Owner login",
-      login_staff_invite_pending: "Your staff account is not activated yet.",
+        /* ---------- Auth / Login ---------- */
+        login: "Login",
+        signup: "Sign up",
+        create_account: "Create account",
+        sign_in_google: "Sign in with Google",
+        reset_password: "Reset Password",
+        incorrect_password: "Incorrect password.",
+        verify_now: "Verify now",
+        reset_password_here: "Reset password here",
+        login_type_owner: "Owner",
+        login_type_staff: "Staff",
 
-      // ===== Verify Email page =====
-      verify_email_title: "Verify your email",
-      verify_email_desc:
-        "We’ve sent a verification link to your email. If you didn’t get it, you can resend it below.",
-      link_sent:
-        "If an account exists for this email, we have sent a new verification link.",
+        /* Owner login error cases */
+        login_error_unverified: "Your email has not been verified.",
+        login_error_bad_password: "Incorrect password.",
+        login_error_no_account: "This email is not registered.",
 
-      // ===== Staff Setup (invite accept) =====
-      staff_setup_title: "Set your password",
-      staff_setup_desc: "Create a password to activate your staff account.",
-      invite_invalid: "The invite link is invalid.",
-      invite_expired: "The invite link has expired.",
-      invite_used: "This invite link was already used.",
+        /* Staff login error cases */
+        login_staff_not_found: "This email is not linked to any staff account.",
+        login_staff_invite_pending:
+          "Your staff account has not been activated yet.",
+        login_staff_inactive: "This staff account is inactive.",
+        login_staff_bad_password: "Incorrect password.",
+        login_staff_contact_owner:
+          "Please contact your shop owner to continue.",
 
-      // ----- General -----
-      logout: "Logout",
-      loading: "Loading...",
-      invalid_email: "Invalid email format",
+        /* ---------- Signup ---------- */
+        signup_success:
+          "Sign up successful! Please check your email to verify your account.",
+        password_requirements: "Password must include:",
+        password_rule_uppercase: "At least one uppercase letter",
+        password_rule_number: "At least one number",
+        password_rule_length: "At least 8 characters",
+        password_rule_symbol: "Allowed symbols: ! @ # $ % ^ & * . _ -",
+        password_confirm: "Confirm Password",
+        password_mismatch: "Passwords do not match",
 
-      // ----- Owner Dashboard -----
-      owner_dashboard: "Owner Dashboard",
-      shop_name: "Shop Name",
-      invite_staff: "Invite Staff",
-      staff_list: "Staff List",
-      staff_name: "Staff Name",
-      staff_email: "Staff Email",
-      send_invite: "Send Invite",
-      resend_invite: "Resend Invite",
-      invite_sent: "Invitation email sent successfully.",
-      invite_resent: "Invitation email resent successfully.",
-      reset_password: "Reset Password",
-      reset_link_sent: "Password reset link sent successfully.",
-      staff_deactivated: "Staff deactivated successfully.",
-      confirm_deactivate: "Are you sure you want to deactivate this staff?",
-      actions: "Actions",
-      status: "Status",
-      active: "Active",
-      inactive: "Inactive",
-      no_staff: "No staff members found.",
+        /* ---------- Email verification ---------- */
+        verification_title: "Email Verification",
+        verification_success:
+          "Your email has been successfully verified. You can now log in.",
+        resend_verification: "Resend verification email",
 
-      // ----- Staff Dashboard -----
-      staff_dashboard: "Staff Dashboard",
-      welcome_staff: "Welcome",
-      staff_dashboard_intro:
-        "This is your workspace. Here you will be able to create orders, mark them ready, and see live updates in real time.",
-      coming_soon: "Coming soon",
-      feature_create_order: "Create new order with one tap",
-      feature_mark_ready: "Mark orders ready & done",
-      feature_live_updates: "Live queue updates (Socket.IO)",
-      feature_sound_vibration: "Customer sound & vibration alerts",
+        /* ---------- Error Codes ---------- */
+        errors: {
+          1999: "Something went wrong. Please try again.",
+          1000: "Invalid request.",
+          1001: "Email already exists.",
+          1002: "Email already in use.",
+          1003: "Incorrect password.",
+          1007: "Account not found.",
+          1200: "Email not verified.",
+          1202: "Invalid token.",
+          1203: "Token expired.",
+          1300: "Staff account inactive.",
+          1403: "Staff invite pending.",
+        },
 
-      // ===== Numeric error codes → user messages =====
-      errors: {
-        1000: "This field is required.",
-        1001: "The format is invalid.",
-        1002: "This email is already registered.",
-        1003: "Invalid email or password.",
-        1004: "Unauthorized request.",
-        1005: "File is too large.",
-        1006: "Image resolution is too high.",
-        1007: "Account not found.",
-        1100: "Google sign-in failed.",
-        1101: "Google did not provide an email for this account.",
-        1200: "Please verify your email to continue.",
-        1201: "If an account exists for this email, we have sent a reset link.",
-        1202: "This reset link is invalid.",
-        1203: "This reset link has expired.",
-        1300: "Your staff account is disabled.",
-        1400: "Invalid invite.",
-        1401: "Invite expired.",
-        1402: "Invite already used.",
-        1999: "An unexpected error occurred.",
+        /* ---------- Staff Setup / Reset ---------- */
+        staff_setup_title: "Activate Staff Account",
+        staff_setup_intro:
+          "Create your password to activate your staff account.",
+        staff_reset_title: "Reset Staff Password",
+        staff_reset_intro:
+          "Enter your new password to complete the reset process.",
+        reset_link_sent: "Password reset link sent successfully.",
+
+        /* ------------------------------------------------------------------
+         * ORDERS PAGE
+         * ------------------------------------------------------------------ */
+        orders_title: "Orders",
+        orders_intro:
+          "This is the shared order workspace for owners and staff. Here you will see active orders, create new ones, and mark them as ready or done.",
+        orders_placeholder:
+          "In the next step, we will add the real-time order list and actions here.",
+
+        /* ------------------------------------------------------------------
+         * SHOP SETTINGS
+         * ------------------------------------------------------------------ */
+        shop_settings_title: "Shop Settings",
+        shop_name: "Shop Name",
+        shop_logo: "Shop Logo",
+        shop_update: "Update Shop",
+        shop_update_success: "Shop information updated successfully.",
+        shop_name_label: "Shop Name",
+        order_numbering_mode: "Order numbering mode",
+        numbering_sequential: "Sequential (resets daily)",
+        numbering_random: "Random",
+        customer_sound: "Customer notification sound",
+        save_changes: "Save Changes",
+        delete_shop: "Delete Shop",
+        delete_shop_confirm:
+          "Are you sure you want to delete this shop? This action cannot be undone.",
+
+        /* Staff management section */
+        invite_staff: "Invite Staff",
+        staff_list: "Staff List",
+        staff_name_label: "Staff Name",
+        staff_email: "Staff Email",
+        send_invite: "Send Invite",
+        resend_invite: "Resend Invite",
+        invite_sent: "Invitation email sent successfully.",
+        invite_resent: "Invitation email resent successfully.",
+        staff_deactivated: "Staff deactivated successfully.",
+        confirm_deactivate: "Are you sure you want to deactivate this staff?",
+        no_staff: "No staff members found.",
+
+        /* ------------------------------------------------------------------
+         * ACCOUNT SETTINGS
+         * ------------------------------------------------------------------ */
+        account_settings_title: "Account Settings",
+        account_role: "Role",
+        role_owner: "Owner",
+        role_staff: "Staff",
+        account_settings_intro:
+          "Manage your personal account settings here. Additional options such as password change will be added soon.",
+        change_password: "Change Password",
+        password_change_coming: "Change password (coming soon)",
+      },
+    },
+
+    /* ------------------------------------------------------------------
+     * THAI
+     * ------------------------------------------------------------------ */
+    th: {
+      translation: {
+        /* ---------- General ---------- */
+        loading: "กำลังโหลด...",
+        logout: "ออกจากระบบ",
+        email: "อีเมล",
+        password: "รหัสผ่าน",
+        name: "ชื่อ",
+        actions: "การทำงาน",
+        status: "สถานะ",
+        active: "เปิดใช้งาน",
+        inactive: "ปิดใช้งาน",
+        invalid_email: "รูปแบบอีเมลไม่ถูกต้อง",
+        confirm: "ยืนยัน",
+        cancel: "ยกเลิก",
+        back: "กลับ",
+
+        /* ---------- Auth / Login ---------- */
+        login: "เข้าสู่ระบบ",
+        signup: "สมัครสมาชิก",
+        create_account: "สร้างบัญชี",
+        sign_in_google: "เข้าสู่ระบบด้วย Google",
+        reset_password: "รีเซ็ตรหัสผ่าน",
+        incorrect_password: "รหัสผ่านไม่ถูกต้อง",
+        verify_now: "ยืนยันตอนนี้",
+        reset_password_here: "รีเซ็ตรหัสผ่านที่นี่",
+        login_type_owner: "เจ้าของ",
+        login_type_staff: "พนักงาน",
+
+        login_error_unverified: "อีเมลของคุณยังไม่ได้รับการยืนยัน",
+        login_error_bad_password: "รหัสผ่านไม่ถูกต้อง",
+        login_error_no_account: "ไม่พบบัญชีนี้",
+
+        login_staff_not_found: "อีเมลนี้ไม่พบในรายชื่อพนักงาน",
+        login_staff_invite_pending: "บัญชีพนักงานยังไม่ได้เปิดใช้งาน",
+        login_staff_inactive: "บัญชีพนักงานถูกปิดใช้งาน",
+        login_staff_bad_password: "รหัสผ่านไม่ถูกต้อง",
+        login_staff_contact_owner: "กรุณาติดต่อเจ้าของร้าน",
+
+        /* ---------- Signup ---------- */
+        signup_success: "สมัครสมาชิกสำเร็จ! กรุณาตรวจสอบอีเมลเพื่อยืนยันบัญชี",
+        password_requirements: "รหัสผ่านต้องประกอบด้วย:",
+        password_rule_uppercase: "ตัวอักษรพิมพ์ใหญ่อย่างน้อย 1 ตัว",
+        password_rule_number: "ตัวเลขอย่างน้อย 1 ตัว",
+        password_rule_length: "ความยาวอย่างน้อย 8 ตัวอักษร",
+        password_rule_symbol: "สัญลักษณ์ที่อนุญาต: ! @ # $ % ^ & * . _ -",
+        password_confirm: "ยืนยันรหัสผ่าน",
+        password_mismatch: "รหัสผ่านไม่ตรงกัน",
+
+        /* ---------- Email verification ---------- */
+        verification_title: "ยืนยันอีเมล",
+        verification_success:
+          "ยืนยันอีเมลเรียบร้อยแล้ว คุณสามารถเข้าสู่ระบบได้",
+        resend_verification: "ส่งอีเมลยืนยันอีกครั้ง",
+
+        /* ---------- Error Codes ---------- */
+        errors: {
+          1999: "เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง",
+          1000: "คำขอไม่ถูกต้อง",
+          1001: "อีเมลนี้ถูกใช้ไปแล้ว",
+          1002: "อีเมลนี้มีผู้ใช้แล้ว",
+          1003: "รหัสผ่านไม่ถูกต้อง",
+          1007: "ไม่พบบัญชี",
+          1200: "ยังไม่ได้ยืนยันอีเมล",
+          1202: "โทเคนไม่ถูกต้อง",
+          1203: "โทเคนหมดอายุ",
+          1300: "บัญชีพนักงานถูกปิดใช้งาน",
+          1403: "บัญชีพนักงานยังไม่ได้เปิดใช้งาน",
+        },
+
+        /* ---------- Staff Setup / Reset ---------- */
+        staff_setup_title: "เปิดใช้งานบัญชีพนักงาน",
+        staff_setup_intro: "สร้างรหัสผ่านเพื่อเปิดใช้งานบัญชีพนักงานของคุณ",
+        staff_reset_title: "รีเซ็ตรหัสผ่านพนักงาน",
+        staff_reset_intro: "กรอกรหัสผ่านใหม่เพื่อรีเซ็ตบัญชี",
+        reset_link_sent: "ส่งลิงก์รีเซ็ตรหัสผ่านเรียบร้อยแล้ว",
+
+        /* ------------------------------------------------------------------
+         * ORDERS PAGE
+         * ------------------------------------------------------------------ */
+        orders_title: "ออเดอร์",
+        orders_intro:
+          "พื้นที่ทำงานร่วมของเจ้าของร้านและพนักงาน ที่นี่คุณจะเห็นออเดอร์ที่กำลังดำเนินการ สร้างออเดอร์ใหม่ และเปลี่ยนสถานะได้",
+        orders_placeholder:
+          "ในขั้นตอนถัดไป เราจะเพิ่มรายการออเดอร์แบบเรียลไทม์ที่นี่",
+
+        /* ------------------------------------------------------------------
+         * SHOP SETTINGS
+         * ------------------------------------------------------------------ */
+        shop_settings_title: "ตั้งค่าร้านค้า",
+        shop_name: "ชื่อร้าน",
+        shop_logo: "โลโก้ร้าน",
+        shop_update: "อัปเดตร้าน",
+        shop_update_success: "อัปเดตข้อมูลร้านเรียบร้อยแล้ว",
+        shop_name_label: "ชื่อร้าน",
+        order_numbering_mode: "รูปแบบหมายเลขออเดอร์",
+        numbering_sequential: "ลำดับต่อเนื่อง (รีเซ็ตทุกวัน)",
+        numbering_random: "สุ่ม",
+        customer_sound: "เสียงแจ้งเตือนลูกค้า",
+        save_changes: "บันทึกการเปลี่ยนแปลง",
+        delete_shop: "ลบร้าน",
+        delete_shop_confirm:
+          "คุณแน่ใจหรือไม่ว่าต้องการลบร้าน? การกระทำนี้ไม่สามารถย้อนกลับได้",
+
+        /* Staff management */
+        invite_staff: "เชิญพนักงาน",
+        staff_list: "รายชื่อพนักงาน",
+        staff_name_label: "ชื่อพนักงาน",
+        staff_email: "อีเมลพนักงาน",
+        send_invite: "ส่งคำเชิญ",
+        resend_invite: "ส่งคำเชิญอีกครั้ง",
+        invite_sent: "ส่งคำเชิญเรียบร้อยแล้ว",
+        invite_resent: "ส่งคำเชิญอีกครั้งเรียบร้อยแล้ว",
+        staff_deactivated: "ปิดการใช้งานพนักงานเรียบร้อยแล้ว",
+        confirm_deactivate: "คุณแน่ใจหรือไม่ว่าต้องการปิดการใช้งานพนักงานนี้?",
+        no_staff: "ยังไม่มีพนักงาน",
+
+        /* ------------------------------------------------------------------
+         * ACCOUNT SETTINGS
+         * ------------------------------------------------------------------ */
+        account_settings_title: "ตั้งค่าบัญชี",
+        account_role: "บทบาท",
+        role_owner: "เจ้าของร้าน",
+        role_staff: "พนักงาน",
+        account_settings_intro:
+          "ตั้งค่าบัญชีส่วนตัวของคุณได้ที่นี่ ฟีเจอร์เพิ่มเติม เช่น เปลี่ยนรหัสผ่าน จะถูกเพิ่มในภายหลัง",
+        change_password: "เปลี่ยนรหัสผ่าน",
+        password_change_coming: "เปลี่ยนรหัสผ่าน (เร็วๆ นี้)",
       },
     },
   },
-
-  th: {
-    translation: {
-      // ===== Common labels =====
-      app_title: "เพจเจอร์เรียกคิว",
-      health_ok: "ระบบพร้อมทำงาน",
-      login_type_owner: "เจ้าของ",
-      login_type_staff: "พนักงาน",
-      login: "เข้าสู่ระบบ",
-      signup: "สมัครสมาชิก",
-      or_signin: "มีบัญชีอยู่แล้ว?",
-      create_account: "สร้างบัญชี",
-      your_name: "ชื่อของคุณ",
-      email: "อีเมล",
-      password: "รหัสผ่าน",
-      confirm_password: "ยืนยันรหัสผ่าน",
-      shop_name: "ชื่อร้าน",
-      shop_logo: "โลโก้ร้าน",
-      preview: "ตัวอย่าง",
-      sign_in_google: "เข้าสู่ระบบด้วย Google",
-      email_address: "ที่อยู่อีเมล",
-      resend_link: "ส่งลิงก์ยืนยันอีกครั้ง",
-      open_email_app: "เปิดแอปอีเมล",
-      back_to_login: "กลับสู่หน้าเข้าสู่ระบบ",
-      verify_now: "ยืนยันตอนนี้",
-      reset_password: "รีเซ็ตรหัสผ่าน",
-      reset_password_success: "รีเซ็ตรหัสผ่านสำเร็จ, กลับไปเข้าสู่ระบบ",
-      continue_login: "กลับไปเข้าสู่ระบบ",
-      set_password: "ตั้งรหัสผ่าน",
-
-      // ===== Field requirements / helper text =====
-      field_requirements: "ข้อกำหนด",
-      logo_requirements_title: "ข้อกำหนดโลโก้",
-      logo_req_size: "ขนาดไฟล์ ≤ 2 MB",
-      logo_req_resolution: "ความละเอียด ≤ 1024×1024 พิกเซล",
-      logo_req_types: "รองรับ PNG / JPG / JPEG",
-      password_requirements_title: "ข้อกำหนดรหัสผ่าน",
-      pw_req_length: "อย่างน้อย 8 ตัวอักษร",
-      pw_req_upper: "มีตัวพิมพ์ใหญ่อย่างน้อย 1 ตัว (A–Z)",
-      pw_req_number: "มีตัวเลขอย่างน้อย 1 ตัว (0–9)",
-      pw_req_chars: "อักขระที่อนุญาต: A–Z a–z 0–9 และ ! @ # $ % ^ & * . _ -",
-      pw_req_match: "รหัสผ่านและรหัสผ่านที่ยืนยันตรงกัน",
-      password_ok: "รหัสผ่านผ่านข้อกำหนดทั้งหมดแล้ว!",
-      invalid_image_file: "ไฟล์รูปภาพไม่ถูกต้อง",
-      logo_too_big: "โลโก้ต้องมีขนาด ≤ 2 MB",
-      logo_too_large_resolution: "โลโก้ต้องมีความละเอียด ≤ 1024×1024 พิกเซล",
-      password_rule: "อย่างน้อย 8 ตัว มีตัวพิมพ์ใหญ่และตัวเลข",
-
-      // ===== Login inline error messages (owner mode) =====
-      login_error_unverified: "กรุณายืนยันอีเมลก่อนจึงจะใช้งานต่อได้",
-      login_error_bad_password: "รหัสผ่านไม่ถูกต้อง",
-      login_error_no_account: "ไม่พบบัญชีที่ใช้อีเมลนี้",
-
-      // ===== Login inline error messages (staff mode) =====
-      login_staff_contact_owner: "โปรดติดต่อเจ้าของร้านของคุณ",
-      login_staff_not_found: "ไม่พบบัญชีพนักงานสำหรับอีเมลนี้",
-      login_staff_inactive: "บัญชีพนักงานของคุณถูกปิดใช้งาน",
-      login_staff_bad_password: "รหัสผ่านไม่ถูกต้อง",
-      switch_to_owner_login: "สลับไปเข้าสู่ระบบเจ้าของร้าน",
-      login_staff_invite_pending: "บัญชีพนักงานของคุณยังไม่ได้เปิดใช้งาน",
-
-      // ===== Verify Email page =====
-      verify_email_title: "ยืนยันอีเมลของคุณ",
-      verify_email_desc:
-        "เราได้ส่งลิงก์ยืนยันไปยังอีเมลของคุณ หากยังไม่ได้รับ คุณสามารถส่งอีกครั้งได้ด้านล่าง",
-      link_sent: "ถ้ามีบัญชีนี้อยู่ เราได้ส่งลิงก์ยืนยันใหม่ให้แล้ว",
-
-      // ===== Staff Setup (invite accept) =====
-      staff_setup_title: "ตั้งรหัสผ่านของคุณ",
-      staff_setup_desc: "สร้างรหัสผ่านเพื่อเปิดใช้งานบัญชีพนักงานของคุณ",
-      invite_invalid: "ลิงก์คำเชิญไม่ถูกต้อง",
-      invite_expired: "ลิงก์คำเชิญหมดอายุ",
-      invite_used: "ลิงก์คำเชิญถูกใช้งานแล้ว",
-
-      // ----- General -----
-      logout: "ออกจากระบบ",
-      loading: "กำลังโหลด...",
-      invalid_email: "รูปแบบอีเมลไม่ถูกต้อง",
-
-      // ----- Owner Dashboard -----
-      owner_dashboard: "แดชบอร์ดเจ้าของร้าน",
-      shop_name: "ชื่อร้าน",
-      invite_staff: "เชิญพนักงาน",
-      staff_list: "รายชื่อพนักงาน",
-      staff_name: "ชื่อพนักงาน",
-      staff_email: "อีเมลพนักงาน",
-      send_invite: "ส่งคำเชิญ",
-      resend_invite: "ส่งคำเชิญอีกครั้ง",
-      invite_sent: "ส่งอีเมลคำเชิญเรียบร้อยแล้ว",
-      invite_resent: "ส่งอีเมลคำเชิญอีกครั้งเรียบร้อยแล้ว",
-      reset_password: "รีเซ็ตรหัสผ่าน",
-      reset_link_sent: "ส่งลิงก์รีเซ็ตรหัสผ่านเรียบร้อยแล้ว",
-      staff_deactivated: "ปิดการใช้งานพนักงานเรียบร้อยแล้ว",
-      confirm_deactivate: "คุณแน่ใจหรือไม่ว่าต้องการปิดการใช้งานพนักงานคนนี้?",
-      actions: "การทำงาน",
-      status: "สถานะ",
-      active: "เปิดใช้งาน",
-      inactive: "ปิดใช้งาน",
-      no_staff: "ยังไม่มีพนักงานในร้าน",
-
-      // ===== Numeric error codes → user messages =====
-      errors: {
-        1000: "จำเป็นต้องกรอกข้อมูล",
-        1001: "รูปแบบข้อมูลไม่ถูกต้อง",
-        1002: "อีเมลนี้ถูกใช้งานแล้ว",
-        1003: "อีเมลหรือรหัสผ่านไม่ถูกต้อง",
-        1004: "ไม่มีสิทธิ์เข้าถึง",
-        1005: "ไฟล์มีขนาดใหญ่เกินไป",
-        1006: "ความละเอียดของรูปภาพสูงเกินไป",
-        1007: "ไม่พบบัญชีผู้ใช้",
-        1100: "ไม่สามารถเข้าสู่ระบบด้วย Google ได้",
-        1101: "บัญชี Google นี้ไม่มีอีเมลแนบมา",
-        1200: "กรุณายืนยันอีเมลก่อนใช้งานต่อ",
-        1201: "ถ้ามีบัญชีอีเมลนี้ เราได้ส่งลิงก์รีเซ็ตรหัสผ่านให้แล้ว",
-        1202: "ลิงก์รีเซ็ตรหัสผ่านไม่ถูกต้อง",
-        1203: "ลิงก์รีเซ็ตรหัสผ่านหมดอายุ",
-        1300: "บัญชีพนักงานของคุณถูกปิดใช้งาน",
-        1400: "คำเชิญไม่ถูกต้อง",
-        1401: "คำเชิญหมดอายุ",
-        1402: "คำเชิญถูกใช้งานแล้ว",
-        1999: "เกิดข้อผิดพลาดที่ไม่คาดคิด",
-      },
-
-      // ----- Staff Dashboard -----
-      staff_dashboard: "แดชบอร์ดพนักงาน",
-      welcome_staff: "ยินดีต้อนรับ",
-      staff_dashboard_intro:
-        "นี่คือพื้นที่ทำงานของคุณ คุณจะสามารถสร้างออเดอร์ แจ้งพร้อมเสิร์ฟ และดูสถานะออเดอร์แบบเรียลไทม์ได้ที่นี่",
-      coming_soon: "เร็วๆ นี้",
-      feature_create_order: "สร้างออเดอร์ใหม่ได้ในคลิกเดียว",
-      feature_mark_ready: "เปลี่ยนสถานะออเดอร์เป็นพร้อมเสิร์ฟ / เสร็จสิ้น",
-      feature_live_updates: "อัปเดตคิวแบบเรียลไทม์ (Socket.IO)",
-      feature_sound_vibration: "เสียงแจ้งเตือนและการสั่นสำหรับลูกค้า",
-    },
-  },
-};
-
-i18n
-  .use(LanguageDetector)
-  .use(initReactI18next)
-  .init({
-    resources,
-    fallbackLng: "en",
-    detection: {
-      order: ["localStorage", "navigator"],
-      caches: ["localStorage"],
-    },
-    interpolation: { escapeValue: false },
-  });
+});
 
 export default i18n;
