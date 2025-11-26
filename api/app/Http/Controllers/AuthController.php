@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Validation\ValidationException;
 use App\Mail\VerifyEmailMail;
 use App\Mail\PasswordResetMail;
 
@@ -94,7 +95,7 @@ class AuthController extends Controller
           ],
         ], 201);
       });
-    } catch (\Illuminate\Validation\ValidationException $e) {
+    } catch (ValidationException $e) {
       $errors = [];
       $failed = $e->validator->failed(); // field => [rule => params]
 
@@ -158,43 +159,92 @@ class AuthController extends Controller
 
   public function login(Request $req)
   {
-    $req->validate(['email' => 'required|email', 'password' => 'required']);
+    try {
+      $req->validate([
+        'email'    => 'required|email',
+        'password' => 'required|string',
+      ]);
 
-    $owner = DB::table('owners')->where('email', $req->email)->first();
+      $owner = DB::table('owners')->where('email', $req->email)->first();
 
-    if (!$owner) {
+      if (!$owner) {
+        return response()->json([
+          'success' => false,
+          'message' => 'ACCOUNT_NOT_FOUND',
+        ], 404);
+      }
+
+      if (!Hash::check($req->password, $owner->password ?? '')) {
+        return response()->json([
+          'success' => false,
+          'message' => 'INVALID_CREDENTIAL',
+        ], 401);
+      }
+
+      if (!$owner->email_verified_at) {
+        return response()->json([
+          'success' => false,
+          'message' => 'EMAIL_NOT_VERIFIED',
+        ], 403);
+      }
+
+      $token = Str::random(64);
+
+      DB::table('owner_api_tokens')->insert([
+        'owner_id'   => $owner->id,
+        'token'      => $token,
+        'created_at' => now(),
+        'updated_at' => now(),
+      ]);
+
       return response()->json([
-        'message' => 'Account not found',
-        'errors'  => [config('errorcodes.ACCOUNT_NOT_FOUND')],
-      ], 404);
-    }
+        'success' => true,
+        'message' => 'LOGIN_SUCCESS',
+        'data'    => [
+          'token' => $token,
+          // you can add user/role here later if needed
+        ],
+      ], 200);
+    } catch (ValidationException $e) {
+      // Map Laravel rules → numeric codes in config/errorcodes.php
+      $map = [
+        'REQUIRED' => config('errorcodes.REQUIRED_FIELD'),
+        'EMAIL'    => config('errorcodes.INVALID_EMAIL'),
+        'STRING'   => config('errorcodes.INVALID_FORMAT'),
+        'MIN'      => config('errorcodes.TOO_SHORT') ?? config('errorcodes.VALIDATION_ERROR'),
+        'MAX'      => config('errorcodes.TOO_LONG')  ?? config('errorcodes.VALIDATION_ERROR'),
+      ];
 
-    if (!Hash::check($req->password, $owner->password ?? '')) {
+      $errors = [];
+      $failed = $e->validator->failed(); // field => [rule => params]
+
+      foreach ($failed as $field => $rules) {
+        foreach ($rules as $rule => $params) {
+          $key  = strtoupper($rule);
+          $code = $map[$key] ?? config('errorcodes.VALIDATION_ERROR');
+
+          $meta = [];
+          if ($key === 'MIN' && isset($params[0])) {
+            $meta['min'] = $params[0];
+          }
+          if ($key === 'MAX' && isset($params[0])) {
+            $meta['max'] = $params[0];
+          }
+
+          $errors[$field][] = [
+            'code' => $code,
+            'meta' => $meta,
+          ];
+        }
+      }
+
       return response()->json([
-        'message' => 'Invalid credentials',
-        'errors'  => [config('errorcodes.INVALID_CREDENTIAL')],
-      ], 401);
+        'success' => false,
+        'message' => 'VALIDATION_FAILED',
+        'errors'  => $errors,
+      ], 422);
     }
-
-    if (!$owner->email_verified_at) {
-      return response()->json([
-        'message' => 'Email not verified',
-        'errors'  => [config('errorcodes.EMAIL_NOT_VERIFIED')],
-      ], 403);
-    }
-
-    $token = Str::random(64);
-    DB::table('owner_api_tokens')->insert([
-      'owner_id' => $owner->id,
-      'token' => $token,
-      'created_at' => now(),
-      'updated_at' => now()
-    ]);
-
-    return ['token' => $token];
   }
-
-
   public function logout(Request $req)
   {
     $token = $req->bearerToken();
@@ -245,18 +295,80 @@ class AuthController extends Controller
 
   public function resendVerification(Request $req)
   {
-    $req->validate(['email' => 'required|email']);
-    $owner = DB::table('owners')->where('email', $req->email)->first();
-    if (!$owner) {
-      // Do not reveal existence—return generic OK
-      return response()->json(['message' => 'OK'], 200);
+    try {
+      $req->validate([
+        'email' => 'required|email',
+      ]);
+
+      $owner = DB::table('owners')->where('email', $req->email)->first();
+
+      if (!$owner) {
+        // Do not reveal existence—return generic success
+        return response()->json([
+          'success' => true,
+          'message' => 'VERIFY_EMAIL_SENT', // generic, used also when actually sent
+        ], 200);
+      }
+
+      if ($owner->email_verified_at) {
+        // Already verified – still a success, front-end may show a different text if desired
+        return response()->json([
+          'success' => true,
+          'message' => 'EMAIL_ALREADY_VERIFIED',
+        ], 200);
+      }
+
+      $verifyUrl = URL::temporarySignedRoute(
+        'auth.verify-email',
+        now()->addMinutes(60),
+        ['email' => $owner->email]
+      );
+
+      Mail::to($owner->email)->send(new VerifyEmailMail($verifyUrl));
+
+      return response()->json([
+        'success' => true,
+        'message' => 'VERIFY_EMAIL_SENT',
+      ], 200);
+    } catch (ValidationException $e) {
+      // Map Laravel validation rules → numeric codes in config/errorcodes.php
+      $map = [
+        'REQUIRED' => config('errorcodes.REQUIRED_FIELD'),
+        'EMAIL'    => config('errorcodes.INVALID_EMAIL'),
+        'STRING'   => config('errorcodes.INVALID_FORMAT'),
+        'MIN'      => config('errorcodes.TOO_SHORT') ?? config('errorcodes.VALIDATION_ERROR'),
+        'MAX'      => config('errorcodes.TOO_LONG')  ?? config('errorcodes.VALIDATION_ERROR'),
+      ];
+
+      $errors = [];
+      $failed = $e->validator->failed(); // field => [rule => params]
+
+      foreach ($failed as $field => $rules) {
+        foreach ($rules as $rule => $params) {
+          $key  = strtoupper($rule);
+          $code = $map[$key] ?? config('errorcodes.VALIDATION_ERROR');
+
+          $meta = [];
+          if ($key === 'MIN' && isset($params[0])) {
+            $meta['min'] = $params[0];
+          }
+          if ($key === 'MAX' && isset($params[0])) {
+            $meta['max'] = $params[0];
+          }
+
+          $errors[$field][] = [
+            'code' => $code,
+            'meta' => $meta,
+          ];
+        }
+      }
+
+      return response()->json([
+        'success' => false,
+        'message' => 'VALIDATION_FAILED',
+        'errors'  => $errors,
+      ], 422);
     }
-    if ($owner->email_verified_at) {
-      return response()->json(['message' => 'Already verified'], 200);
-    }
-    $verifyUrl = URL::temporarySignedRoute('auth.verify-email', now()->addMinutes(60), ['email' => $owner->email]);
-    Mail::to($owner->email)->send(new \App\Mail\VerifyEmailMail($verifyUrl));
-    return response()->json(['message' => 'OK'], 200);
   }
 
   public function forgot(Request $req)

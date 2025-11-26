@@ -9,7 +9,7 @@ return new class extends Migration {
   {
     Schema::create('staff_api_tokens', function (Blueprint $t) {
       $t->id();
-      $t->foreignId('staff_id')->constrained('staff')->cascadeOnDelete();
+      $t->foreignId('staff_id')->constrained('staffs')->cascadeOnDelete();
       $t->string('token', 80)->unique();
       $t->timestamp('last_used_at')->nullable();
       $t->timestamps();

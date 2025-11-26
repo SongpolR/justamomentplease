@@ -22,28 +22,7 @@ import NotFound from "./pages/NotFound.jsx";
 
 import LanguageSwitcher from "./components/LanguageSwitcher.jsx";
 
-// ---------- i18n ----------
-import { useTranslation } from "react-i18next";
-
 import SessionExpiredModal from "./components/SessionExpiredModal";
-
-// Simple language switch on top-right
-function LangSwitcher() {
-  const { i18n } = useTranslation();
-  const toggle = () => {
-    const next = i18n.language === "en" ? "th" : "en";
-    i18n.changeLanguage(next);
-    localStorage.setItem("lang", next);
-  };
-  return (
-    <button
-      onClick={toggle}
-      className="absolute top-4 right-4 text-xs underline text-gray-600 hover:text-black"
-    >
-      {i18n.language === "en" ? "ไทย" : "EN"}
-    </button>
-  );
-}
 
 // Top navigation (shown only for logged-in pages)
 function TopNav({ role }) {

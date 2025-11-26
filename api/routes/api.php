@@ -59,7 +59,7 @@ Route::middleware(['owner', 'verified'])->group(function () {
   Route::put('/shop',  [ShopController::class, 'update']); // expect multipart/form-data for logo if provided
 
   // Staff management (owner provisions)
-  Route::get('/staff',                  [StaffController::class, 'list']);
+  Route::get('/staff',                  [StaffController::class, 'index']);
   Route::post('/staff',                 [StaffController::class, 'create']);      // optional direct create
   Route::post('/staff/{id}/deactivate', [StaffController::class, 'deactivate']);
 

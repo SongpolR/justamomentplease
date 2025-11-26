@@ -1,15 +1,23 @@
 // web/src/pages/Login.jsx
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import LanguageSwitcher from "../components/LanguageSwitcher.jsx";
+import api from "../lib/api";
+import {
+  mapFieldValidationErrors,
+  getGlobalErrorFromAxios,
+} from "../lib/errorHelpers";
+import GoogleIcon from "../components/icons/GoogleIcon.jsx";
 
 const API = import.meta.env.VITE_API_URL || "http://localhost:8000/api";
 
 export default function Login() {
   const { t } = useTranslation();
-  const [mode, setMode] = React.useState("owner"); // 'owner' | 'staff'
-  const [errBlock, setErrBlock] = React.useState(null); // { code, email, mode }
-  const emailRef = React.useRef(null);
+  const [mode, setMode] = useState("owner"); // 'owner' | 'staff'
+  const [errBlock, setErrBlock] = useState(null); // { code, email, mode }
+  const [fieldErrors, setFieldErrors] = useState({});
+  const [submitErr, setSubmitErr] = useState("");
+  const [form, setForm] = useState({ email: "", password: "" });
 
   // Preselect mode & email via URL params
   useEffect(() => {
@@ -17,9 +25,12 @@ export default function Login() {
     const m = p.get("mode");
     const e = p.get("email");
     if (m === "staff" || m === "owner") setMode(m);
-    if (e && emailRef.current) emailRef.current.value = e;
+    if (e) {
+      setForm((prev) => ({ ...prev, email: e }));
+    }
   }, []);
 
+  // Google login result handler (same as before)
   useEffect(() => {
     const handler = (ev) => {
       if (ev.data?.type === "google-auth-result") {
@@ -31,7 +42,7 @@ export default function Login() {
         } else if (payload?.errors) {
           alert(payload.errors.map((code) => t(`errors.${code}`)).join("\n"));
         } else {
-          alert(t("errors.1999"));
+          alert(t("errors.9000"));
         }
       }
     };
@@ -48,32 +59,96 @@ export default function Login() {
     );
   };
 
+  // Update form field + clear related errors
+  const updateField = (field, value) => {
+    setForm((prev) => ({ ...prev, [field]: value }));
+
+    // Clear field-level error
+    setFieldErrors((prev) => {
+      if (!prev[field]) return prev;
+      const next = { ...prev };
+      delete next[field];
+      return next;
+    });
+
+    // Clear submit + panel error when user edits fields
+    if (submitErr) setSubmitErr("");
+    if (errBlock) setErrBlock(null);
+  };
+
   const submit = async (e) => {
     e.preventDefault();
     setErrBlock(null);
+    setFieldErrors({});
+    setSubmitErr("");
 
-    const email = e.target.email.value.trim();
-    const password = e.target.password.value;
+    const email = form.email.trim();
+    const password = form.password;
     const endpoint = mode === "owner" ? "/auth/login" : "/staff/login";
 
-    const r = await fetch(`${API}${endpoint}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password }),
-    });
+    try {
+      const res = await api.post(endpoint, { email, password });
+      const data = res.data;
 
-    if (!r.ok) {
-      const data = await r.json().catch(() => ({ errors: [1999] }));
-      const code = Array.isArray(data.errors) ? data.errors[0] : 1999;
-      setErrBlock({ code, email, mode });
-      return;
+      if (data?.success) {
+        // backend: { success, message: "LOGIN_SUCCESS", data: { token } }
+        const token = data.data?.token ?? data.token;
+        if (token) {
+          localStorage.setItem("token", token);
+          localStorage.setItem("tokenType", mode); // 'owner' | 'staff'
+          // Shared landing: Orders
+          location.href = "/orders";
+          return;
+        }
+      }
+
+      // 2xx but success=false (rare)
+      if (data?.message) {
+        const key = `errors.${data.message}`;
+        const translated = t(key) !== key ? t(key) : data.message;
+        setSubmitErr(translated);
+      } else {
+        setSubmitErr(t("errors.9000") || "Unexpected error");
+      }
+    } catch (err) {
+      // Network or no response
+      if (!err.response) {
+        setSubmitErr(getGlobalErrorFromAxios(err, t));
+        return;
+      }
+
+      const { status, data } = err.response;
+
+      // Validation error (422) → field-level errors
+      if (status === 422 && data?.errors && typeof data.errors === "object") {
+        const fe = mapFieldValidationErrors(data.errors, t);
+        setFieldErrors(fe);
+
+        const globalMsg = getGlobalErrorFromAxios(err, t, {
+          defaultValidationCode: 1000,
+        });
+        setSubmitErr(globalMsg);
+        return;
+      }
+
+      // Non-validation errors with message as code:
+      // e.g. ACCOUNT_NOT_FOUND, INVALID_CREDENTIAL, EMAIL_NOT_VERIFIED,
+      // STAFF_INACTIVE, INVITE_PENDING, etc.
+      if (data?.message) {
+        const messageCode = data.message;
+
+        // Owner / staff-specific panel (verify, signup, reset, etc.)
+        setErrBlock({
+          code: messageCode,
+          email,
+          mode,
+        });
+        return;
+      }
+
+      // Fallback
+      setSubmitErr(getGlobalErrorFromAxios(err, t));
     }
-
-    const { token } = await r.json();
-    localStorage.setItem("token", token);
-    localStorage.setItem("tokenType", mode); // 'owner' | 'staff'
-    // Shared landing: Orders
-    location.href = "/orders";
   };
 
   return (
@@ -88,7 +163,11 @@ export default function Login() {
         <div className="flex gap-2 mb-4">
           <button
             type="button"
-            onClick={() => setMode("owner")}
+            onClick={() => {
+              setMode("owner");
+              setErrBlock(null);
+              setSubmitErr("");
+            }}
             className={`flex-1 py-2 rounded-md border text-sm font-medium transition ${
               mode === "owner"
                 ? "bg-black text-white border-black"
@@ -99,7 +178,11 @@ export default function Login() {
           </button>
           <button
             type="button"
-            onClick={() => setMode("staff")}
+            onClick={() => {
+              setMode("staff");
+              setErrBlock(null);
+              setSubmitErr("");
+            }}
             className={`flex-1 py-2 rounded-md border text-sm font-medium transition ${
               mode === "staff"
                 ? "bg-black text-white border-black"
@@ -112,27 +195,49 @@ export default function Login() {
 
         <h1 className="text-2xl font-semibold mb-2">{t("login")}</h1>
 
-        {/* Error panel */}
+        {/* Error panel for business errors (verify, signup, reset, etc.) */}
         {errBlock && <LoginErrorPanel {...errBlock} t={t} />}
+
+        {/* Generic submit error (validation/global) */}
+        {submitErr && !errBlock && (
+          <div className="mb-3 rounded border border-red-300 bg-red-50 p-3 text-sm text-red-800">
+            {submitErr}
+          </div>
+        )}
 
         <label className="block text-sm mt-3">{t("email")}</label>
         <input
           name="email"
           type="email"
           required
-          ref={emailRef}
-          className="mt-1 border rounded-md w-full p-2 focus:ring-2 focus:ring-black focus:outline-none"
+          value={form.email}
+          onChange={(e) => updateField("email", e.target.value)}
+          className={`mt-1 border rounded-md w-full p-2 focus:ring-2 focus:ring-black focus:outline-none ${
+            fieldErrors.email ? "border-red-500" : ""
+          }`}
           placeholder="name@example.com"
         />
+        {fieldErrors.email && (
+          <div className="mt-1 text-xs text-red-600">{fieldErrors.email}</div>
+        )}
 
         <label className="block text-sm mt-4">{t("password")}</label>
         <input
           name="password"
           type="password"
           required
-          className="mt-1 border rounded-md w-full p-2 focus:ring-2 focus:ring-black focus:outline-none"
+          value={form.password}
+          onChange={(e) => updateField("password", e.target.value)}
+          className={`mt-1 border rounded-md w-full p-2 focus:ring-2 focus:ring-black focus:outline-none ${
+            fieldErrors.password ? "border-red-500" : ""
+          }`}
           placeholder="••••••••"
         />
+        {fieldErrors.password && (
+          <div className="mt-1 text-xs text-red-600">
+            {fieldErrors.password}
+          </div>
+        )}
 
         <button
           type="submit"
@@ -148,11 +253,7 @@ export default function Login() {
             className="mt-3 w-full py-2 border border-gray-300 rounded-md flex items-center justify-center gap-2 text-sm hover:bg-gray-50 transition"
             onClick={loginGoogle}
           >
-            <img
-              src="https://www.svgrepo.com/show/475656/google-color.svg"
-              alt="Google"
-              className="w-5 h-5"
-            />
+            <GoogleIcon size={18} />
             {t("sign_in_google")}
           </button>
         )}
@@ -172,6 +273,8 @@ export default function Login() {
               onClick={(e) => {
                 e.preventDefault();
                 setMode("owner");
+                setErrBlock(null);
+                setSubmitErr("");
               }}
               className="text-blue-600 underline"
             >
@@ -194,7 +297,8 @@ function LoginErrorPanel({ code, email, mode, t }) {
 
   // ==== OWNER MODE ====
   if (mode === "owner") {
-    if (code === 1200) {
+    // Backend message codes: EMAIL_NOT_VERIFIED, INVALID_CREDENTIAL, ACCOUNT_NOT_FOUND
+    if (code === "EMAIL_NOT_VERIFIED") {
       return wrap(
         <>
           {t("login_error_unverified")}{" "}
@@ -207,7 +311,7 @@ function LoginErrorPanel({ code, email, mode, t }) {
         </>
       );
     }
-    if (code === 1003) {
+    if (code === "INVALID_CREDENTIAL") {
       return wrap(
         <>
           {t("login_error_bad_password")}{" "}
@@ -220,7 +324,7 @@ function LoginErrorPanel({ code, email, mode, t }) {
         </>
       );
     }
-    if (code === 1007) {
+    if (code === "ACCOUNT_NOT_FOUND") {
       return wrap(
         <>
           {t("login_error_no_account")}{" "}
@@ -233,21 +337,21 @@ function LoginErrorPanel({ code, email, mode, t }) {
         </>
       );
     }
-    return wrap(t("errors.1999"));
+    return wrap(t("errors.9000"));
   }
 
-  // ==== STAFF MODE (Hybrid): no self-resend; only self-reset for wrong password) ====
+  // ==== STAFF MODE ====
+  // Expected message codes for staff backend:
+  // ACCOUNT_NOT_FOUND, INVITE_PENDING, STAFF_INACTIVE, INVALID_CREDENTIAL
   if (mode === "staff") {
-    if (code === 1007) {
-      // no staff & no invite
+    if (code === "ACCOUNT_NOT_FOUND") {
       return wrap(
         <>
           {t("login_staff_not_found")} {t("login_staff_contact_owner")}
         </>
       );
     }
-    if (code === 1403) {
-      // invited but not activated
+    if (code === "INVITE_PENDING") {
       return wrap(
         <>
           {t("login_staff_invite_pending") || t("login_staff_contact_owner")}{" "}
@@ -255,16 +359,14 @@ function LoginErrorPanel({ code, email, mode, t }) {
         </>
       );
     }
-    if (code === 1300) {
-      // inactive
+    if (code === "STAFF_INACTIVE") {
       return wrap(
         <>
           {t("login_staff_inactive")} {t("login_staff_contact_owner")}
         </>
       );
     }
-    if (code === 1003) {
-      // wrong password → self-serve reset
+    if (code === "INVALID_CREDENTIAL") {
       return wrap(
         <>
           {t("login_staff_bad_password")}{" "}
@@ -279,11 +381,11 @@ function LoginErrorPanel({ code, email, mode, t }) {
     }
     return wrap(
       <>
-        {t("errors.1999")} {t("login_staff_contact_owner")}
+        {t("errors.9000")} {t("login_staff_contact_owner")}
       </>
     );
   }
 
   // fallback
-  return wrap(t("errors.1999"));
+  return wrap(t("errors.9000"));
 }

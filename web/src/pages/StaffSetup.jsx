@@ -1,9 +1,13 @@
+// web/src/pages/StaffSetup.jsx
 import React, { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import ChecklistItem from "../components/ChecklistItem.jsx";
 import LanguageSwitcher from "../components/LanguageSwitcher.jsx";
-
-const API = import.meta.env.VITE_API_URL || "http://localhost:8000/api";
+import api from "../lib/api";
+import {
+  mapFieldValidationErrors,
+  getGlobalErrorFromAxios,
+} from "../lib/errorHelpers";
 
 const pwOk = (pw) => ({
   length: pw.length >= 8,
@@ -15,12 +19,16 @@ const pwOk = (pw) => ({
 export default function StaffSetup() {
   const { t } = useTranslation();
   const params = new URLSearchParams(location.search);
-  const token = params.get("token") || "";
+  const tokenParam = params.get("token") || "";
   const email = params.get("email") || "";
 
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
-  const [status, setStatus] = useState(null); // 'ok' | 'invalid' | 'expired' | 'used' | 'error'
+
+  const [inviteStatus, setInviteStatus] = useState(null); // 'invalid' | 'expired' | 'used' | null
+  const [fieldErrors, setFieldErrors] = useState({});
+  const [submitErr, setSubmitErr] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
   const checks = useMemo(() => pwOk(password), [password]);
   const allPwOk =
@@ -31,67 +39,171 @@ export default function StaffSetup() {
     checks.allowed;
   const match = password && confirm && password === confirm;
 
-  const submit = async (e) => {
-    e.preventDefault();
-    setStatus(null);
-    const r = await fetch(`${API}/staff/accept`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, token, password }),
+  const clearErrors = () => {
+    if (submitErr) setSubmitErr("");
+    if (inviteStatus) setInviteStatus(null);
+  };
+
+  const handlePasswordChange = (value) => {
+    setPassword(value);
+    setFieldErrors((prev) => {
+      if (!prev.password) return prev;
+      const next = { ...prev };
+      delete next.password;
+      return next;
     });
-    if (!r.ok) {
-      const data = await r.json().catch(() => ({ errors: [1999] }));
-      const code = (data.errors || [])[0];
-      if (code === 1400) setStatus("invalid");
-      else if (code === 1401) setStatus("expired");
-      else if (code === 1402) setStatus("used");
-      else setStatus("error");
+    clearErrors();
+  };
+
+  const handleConfirmChange = (value) => {
+    setConfirm(value);
+    // confirm mismatch is local; backend doesn’t validate this field
+    clearErrors();
+  };
+
+  const handleMessageCode = (code) => {
+    // Handle specific invite error codes as special states
+    if (code === "INVITE_INVALID") {
+      setInviteStatus("invalid");
       return;
     }
-    setStatus("ok");
-    const data = await r.json();
-    localStorage.setItem("token", data.token);
-    localStorage.setItem("tokenType", "staff");
-    location.href = "/staff";
+    if (code === "INVITE_EXPIRED") {
+      setInviteStatus("expired");
+      return;
+    }
+    if (code === "INVITE_USED") {
+      setInviteStatus("used");
+      return;
+    }
+
+    // Fallback: try errors.<CODE> in i18n; else generic
+    const key = `errors.${code}`;
+    const translated = t(key) !== key ? t(key) : t("errors.9000");
+    setSubmitErr(translated);
+  };
+
+  const submit = async (e) => {
+    e.preventDefault();
+    setInviteStatus(null);
+    setFieldErrors({});
+    setSubmitErr("");
+
+    // Frontend guard (button is already disabled, but just in case)
+    if (!allPwOk || !match) return;
+
+    setSubmitting(true);
+
+    try {
+      const res = await api.post("/staff/accept", {
+        email,
+        token: tokenParam,
+        password,
+      });
+
+      const data = res.data;
+
+      if (data?.success) {
+        const apiToken = data.data?.token ?? data.token;
+        if (apiToken) {
+          localStorage.setItem("token", apiToken);
+          localStorage.setItem("tokenType", "staff");
+        }
+        // Staff main area → same Orders page as owner
+        location.href = "/";
+        return;
+      }
+
+      // 2xx but success=false
+      if (data?.message) {
+        handleMessageCode(data.message);
+      } else {
+        setSubmitErr(t("errors.9000") || "Unexpected error");
+      }
+    } catch (err) {
+      if (!err.response) {
+        setSubmitErr(getGlobalErrorFromAxios(err, t));
+        setSubmitting(false);
+        return;
+      }
+
+      const { status, data } = err.response;
+
+      // Validation errors (e.g. password rules)
+      if (status === 422 && data?.errors && typeof data.errors === "object") {
+        const fe = mapFieldValidationErrors(data.errors, t);
+        setFieldErrors(fe);
+
+        const globalMsg = getGlobalErrorFromAxios(err, t, {
+          defaultValidationCode: 1000,
+        });
+        setSubmitErr(globalMsg);
+        setSubmitting(false);
+        return;
+      }
+
+      // Business errors: invite invalid/expired/used, etc.
+      if (data?.message) {
+        handleMessageCode(data.message);
+        setSubmitting(false);
+        return;
+      }
+
+      setSubmitErr(getGlobalErrorFromAxios(err, t));
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-6">
+    <div className="min-h-screen flex items-center justify-center p-6 bg-gray-50">
       <LanguageSwitcher className="fixed top-4 right-4" />
       <form
         onSubmit={submit}
         className="w-[420px] bg-white rounded-xl shadow p-6"
       >
         <h1 className="text-xl font-semibold">{t("staff_setup_title")}</h1>
-        <p className="text-sm text-gray-600 mt-1">{t("staff_setup_desc")}</p>
         <div className="mt-3 text-sm text-gray-600">
           Email: <span className="font-mono">{email}</span>
         </div>
 
-        {status && status !== "ok" && (
+        {/* Invite status panel (invalid/expired/used) */}
+        {inviteStatus && (
           <div className="mt-3 rounded border border-red-300 bg-red-50 p-3 text-sm text-red-800">
-            {status === "invalid" && t("invite_invalid")}
-            {status === "expired" && t("invite_expired")}
-            {status === "used" && t("invite_used")}
-            {status === "error" && t("errors.1999")}
+            {inviteStatus === "invalid" && t("invite_invalid")}
+            {inviteStatus === "expired" && t("invite_expired")}
+            {inviteStatus === "used" && t("invite_used")}
+          </div>
+        )}
+
+        {/* Generic submit error */}
+        {submitErr && (
+          <div className="mt-3 rounded border border-red-300 bg-red-50 p-3 text-sm text-red-800">
+            {submitErr}
           </div>
         )}
 
         <label className="block mt-4 text-sm">{t("password")}</label>
         <input
           type="password"
-          className="border p-2 rounded w-full"
+          className={`border p-2 rounded w-full ${
+            fieldErrors.password ? "border-red-500" : ""
+          }`}
           value={password}
-          onChange={(e) => setPassword(e.target.value)}
+          onChange={(e) => handlePasswordChange(e.target.value)}
           required
         />
+        {fieldErrors.password && (
+          <div className="mt-1 text-xs text-red-600">
+            {fieldErrors.password}
+          </div>
+        )}
 
         <label className="block mt-4 text-sm">{t("confirm_password")}</label>
         <input
           type="password"
           className="border p-2 rounded w-full"
           value={confirm}
-          onChange={(e) => setConfirm(e.target.value)}
+          onChange={(e) => handleConfirmChange(e.target.value)}
           required
         />
 
@@ -121,17 +233,11 @@ export default function StaffSetup() {
         </div>
 
         <button
-          disabled={!allPwOk || !match}
+          disabled={!allPwOk || !match || submitting}
           className="mt-4 w-full bg-black text-white rounded py-2 disabled:opacity-50"
         >
-          {t("set_password")}
+          {t("staff_set_password")}
         </button>
-
-        {status === "ok" && (
-          <a className="mt-3 inline-block underline text-sm" href="/login">
-            {t("continue_login")}
-          </a>
-        )}
       </form>
     </div>
   );

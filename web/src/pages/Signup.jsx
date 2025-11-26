@@ -106,11 +106,30 @@ export default function Signup() {
         const { payload } = ev.data;
         if (payload?.token) {
           localStorage.setItem("token", payload.token);
+          localStorage.setItem("tokenType", "owner");
           location.href = "/";
         } else if (payload?.errors) {
           alert(payload.errors.map((code) => t(`errors.${code}`)).join("\n"));
         } else {
-          alert(t("errors.1999"));
+          alert(t("errors.9000"));
+        }
+      }
+    };
+    window.addEventListener("message", handler);
+    return () => window.removeEventListener("message", handler);
+  }, [t]);
+
+  useEffect(() => {
+    const handler = (ev) => {
+      if (ev.data?.type === "google-auth-result") {
+        const { payload } = ev.data;
+        if (payload?.token) {
+          localStorage.setItem("token", payload.token);
+          location.href = "/";
+        } else if (payload?.errors) {
+          alert(payload.errors.map((code) => t(`errors.${code}`)).join("\n"));
+        } else {
+          alert(t("errors.9000"));
         }
       }
     };
@@ -206,13 +225,6 @@ export default function Signup() {
           defaultValidationCode: 1000,
         });
         setSubmitErr(globalMsg);
-        return;
-      }
-
-      // Legacy style: errors is an array of numeric codes
-      if (Array.isArray(data?.errors)) {
-        const msgs = data.errors.map((code) => t(`errors.${code}`));
-        setSubmitErr(msgs.join(", "));
         return;
       }
 
@@ -395,14 +407,14 @@ export default function Signup() {
           {/* Submit */}
           <button
             className="mt-4 w-full bg-black text-white rounded py-2 disabled:opacity-50"
-            // disabled={
-            //   !form.shop_name ||
-            //   !form.name ||
-            //   !form.email ||
-            //   !allPwOk ||
-            //   !pwMatch ||
-            //   !!logoMeta.error
-            // }
+            disabled={
+              !form.shop_name ||
+              !form.name ||
+              !form.email ||
+              !allPwOk ||
+              !pwMatch ||
+              !!logoMeta.error
+            }
           >
             {t("signup")}
           </button>

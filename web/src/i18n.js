@@ -43,6 +43,7 @@ i18n.use(initReactI18next).init({
         create_account: "Create account",
         sign_in_google: "Sign in with Google",
         reset_password: "Reset Password",
+        deactivate: "Deactivate",
         verify_now: "Verify now",
         reset_password_here: "Reset password here",
         login_type_owner: "Owner",
@@ -130,12 +131,15 @@ i18n.use(initReactI18next).init({
 
         /* ---------- Staff Setup / Reset ---------- */
         staff_setup_title: "Activate Staff Account",
-        staff_setup_intro:
-          "Create your password to activate your staff account.",
-        staff_reset_title: "Reset Staff Password",
-        staff_reset_intro:
-          "Enter your new password to complete the reset process.",
+        staff_set_password: "Set password and activate",
         reset_link_sent: "Password reset link sent successfully.",
+        invite_used: "This invite has already been used.",
+        invite_invalid: "This invite link is invalid.",
+        invite_expired: "This invite link has expired.",
+        staff_reset_password_success:
+          "Your password has been reset successfully.",
+        staff_reset_invalid: "This reset link is invalid.",
+        staff_reset_expired: "This reset link has expired.",
 
         /* ------------------------------------------------------------------
          * ORDERS PAGE
@@ -180,6 +184,7 @@ i18n.use(initReactI18next).init({
         shop_settings_title: "Shop Settings",
         shop_name: "Shop Name",
         shop_logo: "Shop Logo",
+        shop_sound_key: "Notify Sound",
         shop_update: "Update Shop",
         shop_update_success: "Shop information updated successfully.",
         shop_name_label: "Shop Name",
@@ -195,7 +200,7 @@ i18n.use(initReactI18next).init({
         /* Staff management section */
         invite_staff: "Invite Staff",
         staff_list: "Staff List",
-        staff_name_label: "Staff Name",
+        staff_name: "Staff Name",
         staff_email: "Staff Email",
         send_invite: "Send Invite",
         resend_invite: "Resend Invite",
@@ -204,6 +209,7 @@ i18n.use(initReactI18next).init({
         staff_deactivated: "Staff deactivated successfully.",
         confirm_deactivate: "Are you sure you want to deactivate this staff?",
         no_staff: "No staff members found.",
+        staff_status_invited: "Invited (pending)",
 
         /* ------------------------------------------------------------------
          * ACCOUNT SETTINGS
@@ -216,6 +222,21 @@ i18n.use(initReactI18next).init({
           "Manage your personal account settings here. Additional options such as password change will be added soon.",
         change_password: "Change Password",
         password_change_coming: "Change password (coming soon)",
+        sound_options: {
+          ding: "Ding (Default)",
+          bell: "Bell",
+          chime: "Chime",
+          beep: "Beep",
+          ping: "Ping",
+        },
+        timezone: "Timezone",
+        timezones: {
+          "Asia/Bangkok": "Asia/Bangkok (ICT)",
+          "Asia/Singapore": "Asia/Singapore (SGT)",
+          "Asia/Tokyo": "Asia/Tokyo (JST)",
+          "Europe/London": "Europe/London (GMT/BST)",
+          "America/New_York": "America/New_York (EST/EDT)",
+        },
       },
     },
 
@@ -248,9 +269,11 @@ i18n.use(initReactI18next).init({
         /* ---------- Auth / Login ---------- */
         login: "เข้าสู่ระบบ",
         signup: "สมัครสมาชิก",
+        or_signin: "มีบัญชีอยู่แล้ว?",
         create_account: "สร้างบัญชี",
         sign_in_google: "เข้าสู่ระบบด้วย Google",
         reset_password: "รีเซ็ตรหัสผ่าน",
+        deactivate: "ปิดใช้งาน",
         verify_now: "ยืนยันตอนนี้",
         reset_password_here: "รีเซ็ตรหัสผ่านที่นี่",
         login_type_owner: "เจ้าของ",
@@ -269,6 +292,9 @@ i18n.use(initReactI18next).init({
 
         /* ---------- Signup ---------- */
         logo_requirements_title: "ข้อกำหนดโลโก้",
+        logo_req_size: "ขนาดไฟล์ ≤ 2 mb",
+        logo_req_resolution: "ขนาดภาพ ≤ 1024×1024 px",
+        logo_req_types: "PNG / JPG / JPEG",
         password_requirements_title: "ข้อกำหนดรหัสผ่าน",
         password_rule_uppercase: "ตัวอักษรพิมพ์ใหญ่อย่างน้อย 1 ตัว",
         password_rule_number: "ตัวเลขอย่างน้อย 1 ตัว",
@@ -329,10 +355,14 @@ i18n.use(initReactI18next).init({
 
         /* ---------- Staff Setup / Reset ---------- */
         staff_setup_title: "เปิดใช้งานบัญชีพนักงาน",
-        staff_setup_intro: "สร้างรหัสผ่านเพื่อเปิดใช้งานบัญชีพนักงานของคุณ",
-        staff_reset_title: "รีเซ็ตรหัสผ่านพนักงาน",
-        staff_reset_intro: "กรอกรหัสผ่านใหม่เพื่อรีเซ็ตบัญชี",
+        staff_set_password: "ตั้งรหัสผ่านและเปิดใช้งาน",
         reset_link_sent: "ส่งลิงก์รีเซ็ตรหัสผ่านเรียบร้อยแล้ว",
+        invite_used: "ลิงก์เชิญนี้ถูกใช้งานแล้ว",
+        invite_invalid: "ลิงก์คำเชิญไม่ถูกต้อง",
+        invite_expired: "ลิงก์คำเชิญหมดอายุแล้ว",
+        staff_reset_password_success: "รีเซ็ตรหัสผ่านสำเร็จแล้ว",
+        staff_reset_invalid: "ลิงก์สำหรับรีเซ็ตรหัสผ่านไม่ถูกต้อง",
+        staff_reset_expired: "ลิงก์สำหรับรีเซ็ตรหัสผ่านหมดอายุแล้ว",
 
         /* ------------------------------------------------------------------
          * ORDERS PAGE
@@ -376,6 +406,7 @@ i18n.use(initReactI18next).init({
         shop_settings_title: "ตั้งค่าร้านค้า",
         shop_name: "ชื่อร้าน",
         shop_logo: "โลโก้ร้าน",
+        shop_sound_key: "เสียงแจ้งเตือน",
         shop_update: "อัปเดตร้าน",
         shop_update_success: "อัปเดตข้อมูลร้านเรียบร้อยแล้ว",
         shop_name_label: "ชื่อร้าน",
@@ -391,7 +422,7 @@ i18n.use(initReactI18next).init({
         /* Staff management */
         invite_staff: "เชิญพนักงาน",
         staff_list: "รายชื่อพนักงาน",
-        staff_name_label: "ชื่อพนักงาน",
+        staff_name: "ชื่อพนักงาน",
         staff_email: "อีเมลพนักงาน",
         send_invite: "ส่งคำเชิญ",
         resend_invite: "ส่งคำเชิญอีกครั้ง",
@@ -400,6 +431,7 @@ i18n.use(initReactI18next).init({
         staff_deactivated: "ปิดการใช้งานพนักงานเรียบร้อยแล้ว",
         confirm_deactivate: "คุณแน่ใจหรือไม่ว่าต้องการปิดการใช้งานพนักงานนี้?",
         no_staff: "ยังไม่มีพนักงาน",
+        staff_status_invited: "เชิญแล้ว (รอการยืนยัน)",
 
         /* ------------------------------------------------------------------
          * ACCOUNT SETTINGS
@@ -412,6 +444,22 @@ i18n.use(initReactI18next).init({
           "ตั้งค่าบัญชีส่วนตัวของคุณได้ที่นี่ ฟีเจอร์เพิ่มเติม เช่น เปลี่ยนรหัสผ่าน จะถูกเพิ่มในภายหลัง",
         change_password: "เปลี่ยนรหัสผ่าน",
         password_change_coming: "เปลี่ยนรหัสผ่าน (เร็วๆ นี้)",
+
+        sound_options: {
+          ding: "ติ๊ง (ค่าเริ่มต้น)",
+          bell: "กระดิ่ง",
+          chime: "ไชม์",
+          beep: "บี๊บ",
+          ping: "ปิ๊ง",
+        },
+        timezone: "โซนเวลา",
+        timezones: {
+          "Asia/Bangkok": "Asia/Bangkok (เวลาไทย)",
+          "Asia/Singapore": "Asia/Singapore",
+          "Asia/Tokyo": "Asia/Tokyo",
+          "Europe/London": "Europe/London",
+          "America/New_York": "America/New_York",
+        },
       },
     },
   },

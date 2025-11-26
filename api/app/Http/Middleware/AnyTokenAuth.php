@@ -29,7 +29,7 @@ class AnyTokenAuth
     // Try staff token
     $s = DB::table('staff_api_tokens')->where('token', $token)->first();
     if ($s) {
-      $staff = DB::table('staff')->where('id', $s->staff_id)->first();
+      $staff = DB::table('staffs')->where('id', $s->staff_id)->first();
       if ($staff && $staff->is_active) {
         $request->attributes->set('staff_id', $staff->id);
         $request->attributes->set('shop_id', $staff->shop_id);

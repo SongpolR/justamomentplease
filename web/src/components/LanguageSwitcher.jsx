@@ -7,7 +7,12 @@ export default function LanguageSwitcher({ className = "" }) {
 
   const Btn = ({ code, label }) => (
     <button
-      onClick={() => i18n.changeLanguage(code)}
+      onClick={() =>
+        i18n.changeLanguage(code, () => {
+          i18n.changeLanguage(code);
+          localStorage.setItem("lang", code);
+        })
+      }
       className={`px-2 py-1 text-xs border rounded ${
         lang === code ? "bg-black text-white" : "bg-white text-black"
       }`}

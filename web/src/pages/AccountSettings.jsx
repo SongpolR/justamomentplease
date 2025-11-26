@@ -4,10 +4,11 @@ import { useTranslation } from "react-i18next";
 
 export default function AccountSettings() {
   const { t } = useTranslation();
-  const role = localStorage.getItem("tokenType") || "owner"; // fallback
+  const role = localStorage.getItem("tokenType") || "staff"; // fallback
 
   const logout = () => {
-    localStorage.clear();
+    localStorage.removeItem("token");
+    localStorage.removeItem("tokenType");
     location.href = "/login";
   };
 

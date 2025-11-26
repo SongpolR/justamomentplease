@@ -74,7 +74,7 @@ class OrderController extends Controller
         if (!$shop) {
             return response()->json([
                 'message' => 'Shop not found',
-                'errors'  => [config('errorcodes.UNKNOWN') ?? 1999],
+                'errors'  => [config('errorcodes.UNKNOWN') ?? 9000],
             ], 404);
         }
 
@@ -142,7 +142,7 @@ class OrderController extends Controller
         } catch (\Throwable $e) {
             return response()->json([
                 'message' => 'Failed to create order',
-                'errors'  => [config('errorcodes.UNKNOWN') ?? 1999],
+                'errors'  => [config('errorcodes.UNKNOWN') ?? 9000],
             ], 500);
         }
 

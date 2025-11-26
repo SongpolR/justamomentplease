@@ -48,12 +48,8 @@ class GoogleAuthController extends Controller
 
             DB::table('shops')->insert([
                 'owner_id' => $ownerId,
-                'name' => 'My Cafe',
+                'name' => 'My Shop',
                 'logo_url' => null,
-                'order_numbering_mode' => 'sequential',
-                'seq_next' => 1,
-                'random_min' => 100,
-                'random_max' => 999,
                 'sound_key' => 'ding',
                 'created_at' => now(),
                 'updated_at' => now(),

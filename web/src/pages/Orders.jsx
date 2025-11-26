@@ -129,7 +129,7 @@ export default function Orders() {
           t("order_number_conflict") || "Order number already exists for today."
         );
       } else {
-        setError(data?.message || t("errors.1999"));
+        setError(data?.message || t("errors.9000"));
       }
     } finally {
       setCreating(false);
@@ -167,7 +167,7 @@ export default function Orders() {
         } else if (code === 1501) {
           setError(t("order_not_found") || "Order not found.");
         } else {
-          setError(data?.message || t("errors.1999"));
+          setError(data?.message || t("errors.9000"));
         }
       } else {
         setMessage(t("order_updated") || "Order updated.");
@@ -176,7 +176,7 @@ export default function Orders() {
       }
     } catch (e) {
       console.error(e);
-      setError(t("errors.1999"));
+      setError(t("errors.9000"));
     }
   };
 
