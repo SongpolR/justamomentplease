@@ -3,6 +3,9 @@ import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { QRCodeCanvas } from "qrcode.react";
 import api from "../lib/api";
+import { useToast } from "../components/ToastProvider";
+import LoadingSpinner from "../components/LoadingSpinner";
+import { getGlobalErrorFromAxios } from "../lib/errorHelpers";
 
 // Base URL for customer-facing order page
 const CUSTOMER_BASE_URL =
@@ -10,13 +13,12 @@ const CUSTOMER_BASE_URL =
 
 export default function Orders() {
   const { t } = useTranslation();
-  const token = localStorage.getItem("token");
+  const { showToast } = useToast();
+  const [loading, setLoading] = useState(true);
 
   const [orders, setOrders] = useState([]);
-  const [loading, setLoading] = useState(true);
+
   const [creating, setCreating] = useState(false);
-  const [message, setMessage] = useState(null);
-  const [error, setError] = useState(null);
 
   // create form
   const [orderNo, setOrderNo] = useState("");
@@ -37,26 +39,22 @@ export default function Orders() {
 
   // ---- Load orders ----
   async function loadOrders() {
+    setLoading(true);
     try {
       const res = await api.get("/orders");
-
-      // Laravel usually returns { data: [...] }
-      setOrders(res.data.data ?? res.data);
-      setError(null);
+      setOrders(res.data?.data ?? []);
     } catch (err) {
-      // 401 is already handled globally (redirect) → no need to show banner
       if (err?.response?.status === 401) {
         return;
       }
-
-      const message = err?.response?.data?.message || "Failed to load orders";
-      setError(message);
+      showToast({ type: "error", message: getGlobalErrorFromAxios(err, t) });
+    } finally {
+      setLoading(false);
     }
   }
 
   useEffect(() => {
     loadOrders();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // ---- Items handlers ----
@@ -87,8 +85,6 @@ export default function Orders() {
   const handleCreate = async (e) => {
     e.preventDefault();
     setCreating(true);
-    setMessage(null);
-    setError(null);
 
     try {
       const body = {};
@@ -111,25 +107,25 @@ export default function Orders() {
         body.items = cleanedItems;
       }
 
-      const { data } = await api.post("/orders", {});
+      await api.post("/orders", body);
 
-      setMessage(t("order_created") || "Order created.");
+      showToast({ type: "success", message: t("order_created") });
+      console.log(1123);
       setOrderNo("");
       setPosRef("");
       setItems([{ name: "", qty: 1, note: "" }]);
       // reload list
       loadOrders();
-    } catch (e) {
+    } catch (err) {
+      const data = err?.response?.data;
       const code =
         data && Array.isArray(data.errors) && data.errors.length
           ? data.errors[0]
           : null;
       if (code === 1502) {
-        setError(
-          t("order_number_conflict") || "Order number already exists for today."
-        );
+        showToast({ type: "error", message: t("order_number_conflict") });
       } else {
-        setError(data?.message || t("errors.9000"));
+        showToast({ type: "error", message: getGlobalErrorFromAxios(err, t) });
       }
     } finally {
       setCreating(false);
@@ -138,45 +134,27 @@ export default function Orders() {
 
   // ---- Change status (ready/done) ----
   const changeStatus = async (order, targetStatus) => {
-    setMessage(null);
-    setError(null);
-
     const endpoint =
       targetStatus === "ready"
-        ? `${API}/orders/${order.id}/ready`
-        : `${API}/orders/${order.id}/done`;
+        ? `/orders/${order.id}/ready`
+        : `/orders/${order.id}/done`;
 
     try {
-      const r = await fetch(endpoint, {
-        method: "POST",
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      const data = await r.json().catch(() => null);
-
-      if (!r.ok) {
-        const code =
-          data && Array.isArray(data.errors) && data.errors.length
-            ? data.errors[0]
-            : null;
-        if (code === 1500) {
-          setError(
-            t("order_invalid_transition") ||
-              "Cannot change to this status from current state."
-          );
-        } else if (code === 1501) {
-          setError(t("order_not_found") || "Order not found.");
-        } else {
-          setError(data?.message || t("errors.9000"));
-        }
-      } else {
-        setMessage(t("order_updated") || "Order updated.");
-        // refresh list
-        loadOrders();
-      }
+      await api.post(endpoint);
+      await loadOrders();
     } catch (e) {
-      console.error(e);
-      setError(t("errors.9000"));
+      const data = err?.response?.data;
+      const code =
+        data && Array.isArray(data.errors) && data.errors.length
+          ? data.errors[0]
+          : null;
+      if (code === 1500) {
+        showToast({ type: "error", message: t("order_invalid_transition") });
+      } else if (code === 1500) {
+        showToast({ type: "error", message: t("order_not_found") });
+      } else {
+        showToast({ type: "error", message: getGlobalErrorFromAxios(err, t) });
+      }
     }
   };
 
@@ -205,10 +183,10 @@ export default function Orders() {
           return (
             <div
               key={idx}
-              className="flex items-start gap-2 rounded-md bg-gray-50 px-2 py-1"
+              className="flex items-center gap-2 rounded-md bg-white px-2 py-1"
             >
               {/* Qty pill */}
-              <span className="mt-0.5 inline-flex h-5 min-w-[2rem] items-center justify-center rounded-full bg-gray-900 text-[10px] font-semibold text-white">
+              <span className="mt-0.5 inline-flex h-5 min-w-[2rem] items-center justify-center rounded-full bg-gray-100 text-[10px] font-semibold text-gray-800">
                 {qty}×
               </span>
 
@@ -254,6 +232,10 @@ export default function Orders() {
       ? t("order_status_ready") || "Ready"
       : t("order_status_done") || "Done";
 
+  if (loading) {
+    return <LoadingSpinner fullscreen={true} label={t("loading")} />;
+  }
+
   return (
     <div className="mt-4">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3">
@@ -266,18 +248,6 @@ export default function Orders() {
           {t("refresh") || "Refresh"}
         </button>
       </div>
-
-      {/* Messages */}
-      {message && (
-        <div className="mb-3 bg-green-50 border border-green-300 text-green-800 text-sm px-3 py-2 rounded">
-          {message}
-        </div>
-      )}
-      {error && (
-        <div className="mb-3 bg-red-50 border border-red-300 text-red-800 text-sm px-3 py-2 rounded">
-          {error}
-        </div>
-      )}
 
       {/* Create order */}
       <div className="bg-white rounded-xl shadow p-4 mb-6">
@@ -555,7 +525,7 @@ function OrderColumn({
           {t("orders_empty") || "No orders"}
         </div>
       ) : (
-        <div className="space-y-2 overflow-y-auto max-h-[320px] sm:max-h-[360px]">
+        <div className="space-y-3 overflow-y-auto max-h-[320px] sm:max-h-[360px] p-2">
           {orders.map((o) => {
             const createdAt = o.created_at ? new Date(o.created_at) : null;
             const createdAtLabel = createdAt
@@ -573,7 +543,7 @@ function OrderColumn({
             return (
               <div
                 key={o.id}
-                className="border border-gray-200 rounded-lg px-2 py-2 text-xs text-gray-800"
+                className="rounded-lg p-2 text-xs text-gray-800 bg-gray-50 shadow hover:shadow-md cursor-pointer"
               >
                 <div className="flex justify-between items-start mb-1 gap-2">
                   <div className="min-w-0 flex-1">

@@ -93,7 +93,7 @@ export default function ShopSettings() {
       }
     };
     fetchAll();
-  }, [t]);
+  }, []);
 
   const updateShopName = (value) => {
     setShopName(value);

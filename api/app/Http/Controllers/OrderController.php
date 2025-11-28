@@ -15,7 +15,7 @@ class OrderController extends Controller
     public function index(Request $req)
     {
         $shopId = $req->attributes->get('shop_id'); // from AnyTokenAuth
-        $status = $req->query('status');
+        $status = $req->query(key: 'status');
 
         $today = now()->timezone(config('app.timezone', 'UTC'))->toDateString();
 
@@ -38,7 +38,10 @@ class OrderController extends Controller
             'done_at',
         ]);
 
-        return response()->json($orders);
+        return response()->json([
+            'sucess' => true,
+            'data' => $orders,
+        ], 200);
     }
 
     /**
