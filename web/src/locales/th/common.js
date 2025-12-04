@@ -29,6 +29,10 @@ const common = {
   session_expired_message:
     "เซสชันของคุณหมดอายุแล้ว กรุณาเข้าสู่ระบบอีกครั้งเพื่อดำเนินการต่อ",
   ok: "ตกลง",
+  logout_confirm_title: "ยืนยันการออกจากระบบ",
+  logout_confirm_message: "คุณแน่ใจหรือไม่ว่าต้องการออกจากระบบ?",
+  cancel: "ยกเลิก",
+  logout: "ออกจากระบบ",
 
   menu: {
     order_menu: "ออเดอร์",

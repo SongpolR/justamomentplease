@@ -30,6 +30,10 @@ const common = {
   session_expired_message:
     "Your session has expired. Please log in again to continue.",
   ok: "OK",
+  logout_confirm_title: "Confirm Logout",
+  logout_confirm_message: "Are you sure you want to logout?",
+  cancel: "Cancel",
+  logout: "Logout",
 
   menu: {
     order_menu: "Order",

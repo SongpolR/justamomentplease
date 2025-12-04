@@ -2,11 +2,14 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
+import ConfirmModal from "../components/ConfirmModal";
 
 export default function AccountSettings() {
   const { t } = useTranslation("account");
-  const role = localStorage.getItem("tokenType") || "staff"; // fallback
   const navigate = useNavigate();
+  const [showLogoutConfirm, setShowLogoutConfirm] = React.useState(false);
+
+  const role = localStorage.getItem("tokenType") || "staff"; // fallback
 
   const logout = () => {
     localStorage.removeItem("token");
@@ -16,6 +19,20 @@ export default function AccountSettings() {
 
   return (
     <div className="mt-4 max-w-xl">
+      {/* Logout Confirmation Modal */}
+      <ConfirmModal
+        open={showLogoutConfirm}
+        title={t("common:logout_confirm_title")}
+        message={t("common:logout_confirm_message")}
+        cancelLabel={t("common:cancel")}
+        confirmLabel={t("common:logout")}
+        onCancel={() => setShowLogoutConfirm(false)}
+        onConfirm={() => {
+          setShowLogoutConfirm(false);
+          logout();
+        }}
+      />
+
       <h1 className="text-2xl font-bold mb-2">
         {t("account_settings_title") || "Account Settings"}
       </h1>
@@ -47,7 +64,7 @@ export default function AccountSettings() {
           <button
             type="button"
             className="inline-flex items-center justify-center bg-red-500 text-white rounded-md px-3 py-2 text-sm hover:bg-gray-900"
-            onClick={logout}
+            onClick={() => setShowLogoutConfirm(true)}
           >
             {t("common:logout")}
           </button>
