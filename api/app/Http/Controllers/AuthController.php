@@ -261,7 +261,7 @@ class AuthController extends Controller
       return response()->json(['message' => 'ACCOUNT_NOT_FOUND', 'error_code' => config('errorcodes.ACCOUNT_NOT_FOUND')], 404);
     }
     DB::table('owners')->where('id', $owner->id)->update(['email_verified_at' => now()]);
-    return view('verified'); // tiny success page, or JSON if you prefer
+    return view('email-verified'); // tiny success page, or JSON if you prefer
   }
 
   public function resendVerification(Request $req)
@@ -428,7 +428,7 @@ class AuthController extends Controller
         return response()->json(['message' => 'RESET_TOKEN_INVALID', 'error_code' => config('errorcodes.RESET_TOKEN_INVALID')], 403);
       }
       // update password and cleanup
-      DB::table('owners')->where('email', $req->email)->update(['password' => Hash::make($req->new_password)]);
+      DB::table('owners')->where('email', $req->email)->update(['password' => Hash::make($req->password)]);
       DB::table('password_reset_tokens')->where('email', $req->email)->delete();
       return response()->json([
         'success' => true,
