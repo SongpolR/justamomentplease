@@ -8,6 +8,7 @@ import {
 } from "../lib/errorHelpers";
 import { Link } from "react-router-dom";
 import { useToast } from "../components/ToastProvider";
+import AuthLayout from "../components/layout/AuthLayout.jsx";
 
 export default function VerifyEmail() {
   const { t } = useTranslation("auth");
@@ -15,8 +16,9 @@ export default function VerifyEmail() {
   const initialEmail = params.get("email") || "";
   const [email, setEmail] = useState(initialEmail);
   const [fieldErrors, setFieldErrors] = useState({});
-  const canSubmit = useMemo(() => /\S+@\S+\.\S+/.test(email), [email]);
   const { showToast } = useToast();
+
+  const canSubmit = useMemo(() => /\S+@\S+\.\S+/.test(email), [email]);
 
   const updateEmail = (value) => {
     setEmail(value);
@@ -64,12 +66,15 @@ export default function VerifyEmail() {
         const globalMsg = getGlobalErrorFromAxios(err, t, {
           defaultValidationCode: 1000,
         });
+        if (globalMsg) {
+          showToast({ type: "error", message: globalMsg });
+        }
         return;
       }
 
-      // Non-validation error with message as code
+      // Non-validation error with message as code / string
       if (data?.message) {
-        showToast({ type: "error", message: data?.message });
+        showToast({ type: "error", message: data.message });
         return;
       }
 
@@ -77,45 +82,64 @@ export default function VerifyEmail() {
     }
   };
 
+  const subtitle = t("verify_email_desc");
+
   return (
-    <div className="min-h-screen flex items-center justify-center p-6 bg-gray-50">
-      <div className="bg-white rounded-xl shadow p-6">
-        <h1 className="text-xl font-semibold">{t("verify_email_title")}</h1>
-        <p className="text-sm text-gray-600 mt-2">{t("verify_email_desc")}</p>
-
-        <label className="block mt-4 text-sm">
-          {t("common:email_address")}
-        </label>
-        <input
-          type="email"
-          className={`border p-2 rounded w-full ${
-            fieldErrors.email ? "border-red-500" : ""
-          }`}
-          value={email}
-          onChange={(e) => updateEmail(e.target.value)}
-          placeholder="you@example.com"
-        />
-        {fieldErrors.email && (
-          <div className="mt-1 text-xs text-red-600">{fieldErrors.email}</div>
-        )}
-
-        <button
-          onClick={resend}
-          disabled={!canSubmit}
-          className="mt-3 w-full bg-black text-white rounded py-2 disabled:opacity-50"
-        >
-          {t("resend_link")}
-        </button>
-
-        <div className="mt-6 flex items-center justify-between text-sm">
-          <a className="underline" href="mailto:">
-            {t("open_email_app")}
-          </a>
-          <Link className="underline" to="/login">
-            {t("common:back_to_login")}
-          </Link>
+    <AuthLayout title={t("verify_email_title")} subtitle={subtitle}>
+      {/* Email field */}
+      <label className="mt-2 block text-xs font-medium text-slate-700 dark:text-slate-300">
+        {t("common:email_address")}
+      </label>
+      <input
+        type="email"
+        className={[
+          "mt-1 w-full rounded-lg border p-2.5 text-sm",
+          "bg-white text-slate-900 placeholder:text-slate-400",
+          "focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-1 focus:ring-offset-slate-100",
+          "dark:bg-slate-900/80 dark:text-slate-100 dark:placeholder:text-slate-500",
+          "dark:focus:ring-offset-slate-900",
+          fieldErrors.email
+            ? "border-red-500 focus:ring-red-500"
+            : "border-slate-300 dark:border-slate-700",
+        ].join(" ")}
+        value={email}
+        onChange={(e) => updateEmail(e.target.value)}
+        placeholder="you@example.com"
+      />
+      {fieldErrors.email && (
+        <div className="mt-1 text-xs text-red-500 dark:text-red-400">
+          {fieldErrors.email}
         </div>
+      )}
+
+      {/* Resend button */}
+      <button
+        onClick={resend}
+        disabled={!canSubmit}
+        className={[
+          "mt-4 flex w-full items-center justify-center rounded-full px-4 py-2.5 text-sm font-medium text-white shadow-lg shadow-indigo-500/40 transition",
+          "bg-indigo-500 hover:-translate-y-[1px] hover:bg-indigo-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-300 active:translate-y-0 active:scale-[0.99]",
+          "disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0 disabled:hover:bg-indigo-500",
+        ].join(" ")}
+      >
+        {t("resend_link")}
+      </button>
+
+      {/* Footer actions */}
+      <div className="mt-6 flex flex-row gap-2 text-xs text-slate-500 justify-between dark:text-slate-400">
+        <a
+          className="underline underline-offset-2 hover:text-slate-700 dark:hover:text-slate-200"
+          href="mailto:"
+        >
+          {t("open_email_app")}
+        </a>
+        <Link
+          className="underline underline-offset-2 hover:text-slate-700 dark:hover:text-slate-200"
+          to="/login"
+        >
+          {t("common:back_to_login")}
+        </Link>
       </div>
-    </div>
+    </AuthLayout>
   );
 }
