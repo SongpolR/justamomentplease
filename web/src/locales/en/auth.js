@@ -40,6 +40,8 @@ const auth = {
   confirm_password_incorrect: "Confirm password is not match with requirements",
   signup_success:
     "Your account has been created successfully. Please verify your email address to complete your registration.",
+  signup_subtitle:
+    "Create your owner account to manage your shop, staff, and orders.",
 
   // Email verification
   verify_email_title: "Verify your email",

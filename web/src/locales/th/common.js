@@ -33,6 +33,7 @@ const common = {
   logout_confirm_message: "คุณแน่ใจหรือไม่ว่าต้องการออกจากระบบ?",
   cancel: "ยกเลิก",
   logout: "ออกจากระบบ",
+  preview: "ตัวอย่าง",
 
   menu: {
     order_menu: "ออเดอร์",

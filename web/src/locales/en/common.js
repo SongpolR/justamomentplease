@@ -34,6 +34,7 @@ const common = {
   logout_confirm_message: "Are you sure you want to logout?",
   cancel: "Cancel",
   logout: "Logout",
+  preview: "Preview",
 
   menu: {
     order_menu: "Order",

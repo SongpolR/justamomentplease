@@ -7,9 +7,9 @@ import {
   mapFieldValidationErrors,
   getGlobalErrorFromAxios,
 } from "../lib/errorHelpers";
-import LanguageSwitcher from "../components/LanguageSwitcher.jsx";
 import { useToast } from "../components/ToastProvider";
 import { useNavigate, Link } from "react-router-dom";
+import AuthLayout from "../components/layout/AuthLayout.jsx";
 
 const API = import.meta.env.VITE_API_URL || "http://localhost:8000/api";
 
@@ -43,7 +43,7 @@ export default function Signup() {
       length: pw.length >= 8,
       upper: /[A-Z]/.test(pw),
       number: /[0-9]/.test(pw),
-      allowed: /[!@#$%^&*._-]/.test(pw), // allow empty during typing
+      allowed: /[!@#$%^&*._-]/.test(pw),
     }),
     [pw]
   );
@@ -67,7 +67,6 @@ export default function Signup() {
       return;
     }
 
-    // Basic type/size checks
     if (!ALLOWED_IMAGE_TYPES.includes(logo.type)) {
       setLogoMeta({ w: null, h: null, error: t("invalid_image_file") });
       return;
@@ -78,12 +77,13 @@ export default function Signup() {
     }
 
     const url = URL.createObjectURL(logo);
+    console.log(`Logo URL ${url}`);
     setLogoPreview(url);
 
     const img = new Image();
     img.onload = () => {
-      const w = img.naturalWidth,
-        h = img.naturalHeight;
+      const w = img.naturalWidth;
+      const h = img.naturalHeight;
       if (w > MAX_W || h > MAX_H) {
         setLogoMeta({ w, h, error: t("logo_too_large_resolution") });
       } else {
@@ -95,15 +95,16 @@ export default function Signup() {
     img.src = url;
 
     return () => URL.revokeObjectURL(url);
-  }, [logo, t]); // revoke preview when unmount or new file chosen
+  }, [logo, t]);
 
   const validateBeforeSubmit = () => {
     if (!allPwOk) return t("password_requirements_error");
-    if (!pwMatch) return t("confirm_password_incorrect"); // simple hint
+    if (!pwMatch) return t("confirm_password_incorrect");
     if (logoMeta.error) return logoMeta.error;
     return "";
   };
 
+  // Google result handler (same pattern as Login)
   useEffect(() => {
     const handler = (ev) => {
       if (ev.data?.type === "google-auth-result") {
@@ -121,10 +122,9 @@ export default function Signup() {
     };
     window.addEventListener("message", handler);
     return () => window.removeEventListener("message", handler);
-  }, [t]);
+  }, [t, navigate]);
 
   const loginGoogle = () => {
-    // open popup to backend redirect endpoint
     window.open(
       `${API}/auth/google/redirect`,
       "google",
@@ -133,10 +133,8 @@ export default function Signup() {
   };
 
   const updateField = (field, value) => {
-    // Update the form state
     setForm((prev) => ({ ...prev, [field]: value }));
 
-    // Clear field-level error
     setFieldErrors((prev) => {
       if (!prev[field]) return prev;
       const next = { ...prev };
@@ -173,9 +171,6 @@ export default function Signup() {
       const data = res.data;
 
       if (data?.success) {
-        // You can show a success toast using messages.SIGNUP_SUCCESS_NEED_VERIFY if you want
-        // const msgKey = `messages.${data.message}`;
-        // toast(t(msgKey) !== msgKey ? t(msgKey) : t("messages.SIGNUP_SUCCESS_NEED_VERIFY"));
         showToast({
           type: "success",
           message: t("signup_success"),
@@ -186,19 +181,16 @@ export default function Signup() {
       }
     } catch (err) {
       if (!err.response) {
-        // network or unknown
         showToast({ type: "error", message: getGlobalErrorFromAxios(err, t) });
         return;
       }
 
       const { status, data } = err.response;
 
-      // Validation errors (422) with field mapping
       if (status === 422 && data?.errors && typeof data.errors === "object") {
         const fe = mapFieldValidationErrors(data.errors, t);
         setFieldErrors(fe);
 
-        // Also set a generic validation message at top (optional)
         const globalMsg = getGlobalErrorFromAxios(err, t, {
           defaultValidationCode: 1000,
         });
@@ -206,48 +198,67 @@ export default function Signup() {
         return;
       }
 
-      // Non-validation error with message as code
       showToast({ type: "error", message: getGlobalErrorFromAxios(err, t) });
     }
   };
 
-  return (
-    <div className="min-h-screen w-full relative bg-gray-50 flex items-center justify-center p-4">
-      <form
-        onSubmit={submit}
-        className="bg-white shadow-xl rounded-2xl w-full max-w-md p-4"
-      >
-        <div className="flex flex-row items-center justify-between">
-          <h1 className="text-xl font-semibold">{t("create_account")}</h1>
-          <LanguageSwitcher />
-        </div>
+  const subtitle =
+    t("signup_subtitle") || t("signup_desc") || t("signup_sub_owner") || "";
 
+  const isSubmitDisabled =
+    !form.shop_name ||
+    !form.name ||
+    !form.email ||
+    !allPwOk ||
+    !pwMatch ||
+    !!logoMeta.error;
+
+  return (
+    <AuthLayout title={t("create_account")} subtitle={subtitle}>
+      <form onSubmit={submit} encType="multipart/form-data">
         {/* Shop name */}
-        <label className="block mt-4 text-sm">{t("common:shop_name")}</label>
+        <label className="mt-2 block text-xs font-medium text-slate-700 dark:text-slate-300">
+          {t("common:shop_name")}
+        </label>
         <input
-          className={`border p-2 rounded w-full ${
-            fieldErrors.shop_name ? "border-red-500" : ""
-          }`}
+          className={[
+            "mt-1 w-full rounded-lg border p-2.5 text-sm",
+            "bg-white text-slate-900 placeholder:text-slate-400",
+            "focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-1 focus:ring-offset-slate-100",
+            "dark:bg-slate-900/80 dark:text-slate-100 dark:placeholder:text-slate-500",
+            "dark:focus:ring-offset-slate-900",
+            fieldErrors.shop_name
+              ? "border-red-500 focus:ring-red-500"
+              : "border-slate-300 dark:border-slate-700",
+          ].join(" ")}
           value={form.shop_name}
           onChange={(e) => updateField("shop_name", e.target.value)}
           required
         />
         {fieldErrors.shop_name && (
-          <div className="mt-1 text-xs text-red-600">
+          <div className="mt-1 text-xs text-red-500 dark:text-red-400">
             {fieldErrors.shop_name}
           </div>
         )}
 
-        {/* Shop logo with preview + bullets */}
-        <label className="block mt-4 text-sm">{t("common:shop_logo")}</label>
+        {/* Shop logo */}
+        <label className="mt-4 block text-xs font-medium text-slate-700 dark:text-slate-300">
+          {t("common:shop_logo")}
+        </label>
         <input
-          className={"border p-2 rounded w-full"}
+          className={[
+            "mt-1 block w-full cursor-pointer rounded-lg border p-2 text-xs",
+            "bg-white text-slate-700 file:mr-3 file:cursor-pointer file:rounded-md file:border-0 file:bg-slate-100 file:px-3 file:py-1.5 file:text-xs file:font-medium file:text-slate-800",
+            "hover:file:bg-slate-200",
+            "dark:bg-slate-900/80 dark:text-slate-200 dark:file:bg-slate-800 dark:file:text-slate-100 dark:hover:file:bg-slate-700",
+            fieldErrors.logo || logoMeta.error
+              ? "border-red-500"
+              : "border-slate-300 dark:border-slate-700",
+          ].join(" ")}
           type="file"
           accept="image/png,image/jpeg"
           onChange={(e) => {
             setLogo(e.target.files?.[0] || null);
-
-            // Clear field error for "logo"
             setFieldErrors((prev) => {
               if (!prev.logo) return prev;
               const next = { ...prev };
@@ -258,10 +269,10 @@ export default function Signup() {
           required
         />
         <div className="mt-2">
-          <div className="text-xs text-gray-500 font-medium">
+          <div className="text-xs font-medium text-slate-500 dark:text-slate-400">
             {t("common:logo_requirements_title")}
           </div>
-          <ul className="mt-1 text-xs text-gray-500 list-disc pl-5">
+          <ul className="mt-1 list-disc pl-5 text-xs text-slate-500 dark:text-slate-400">
             <li>{t("common:logo_req_size")}</li>
             <li>{t("common:logo_req_resolution")}</li>
             <li>{t("common:logo_req_types")}</li>
@@ -270,8 +281,8 @@ export default function Signup() {
 
         {logoPreview && (
           <div className="mt-3">
-            <div className="text-xs text-gray-600 mb-1">
-              {t("preview")}{" "}
+            <div className="mb-1 text-xs text-slate-600 dark:text-slate-300">
+              {t("common:preview")}{" "}
               {logoMeta.w && logoMeta.h
                 ? `(${logoMeta.w}×${logoMeta.h}px)`
                 : ""}
@@ -279,87 +290,130 @@ export default function Signup() {
             <img
               src={logoPreview}
               alt="logo preview"
-              className="h-20 w-20 rounded border"
+              className="h-20 w-20 rounded border border-slate-200 object-contain dark:border-slate-600"
             />
           </div>
         )}
         {logoMeta.error && (
-          <div className="mt-2 text-xs text-red-600">{logoMeta.error}</div>
+          <div className="mt-2 text-xs text-red-500 dark:text-red-400">
+            {logoMeta.error}
+          </div>
         )}
         {fieldErrors.logo && (
-          <div className="mt-1 text-xs text-red-600">{fieldErrors.logo}</div>
+          <div className="mt-1 text-xs text-red-500 dark:text-red-400">
+            {fieldErrors.logo}
+          </div>
         )}
 
         {/* Your name */}
-        <label className="block mt-4 text-sm">{t("common:your_name")}</label>
+        <label className="mt-4 block text-xs font-medium text-slate-700 dark:text-slate-300">
+          {t("common:your_name")}
+        </label>
         <input
-          className={`border p-2 rounded w-full ${
-            fieldErrors.name ? "border-red-500" : ""
-          }`}
+          className={[
+            "mt-1 w-full rounded-lg border p-2.5 text-sm",
+            "bg-white text-slate-900 placeholder:text-slate-400",
+            "focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-1 focus:ring-offset-slate-100",
+            "dark:bg-slate-900/80 dark:text-slate-100 dark:placeholder:text-slate-500",
+            "dark:focus:ring-offset-slate-900",
+            fieldErrors.name
+              ? "border-red-500 focus:ring-red-500"
+              : "border-slate-300 dark:border-slate-700",
+          ].join(" ")}
           value={form.name}
           onChange={(e) => updateField("name", e.target.value)}
           required
         />
         {fieldErrors.name && (
-          <div className="mt-1 text-xs text-red-600">{fieldErrors.name}</div>
+          <div className="mt-1 text-xs text-red-500 dark:text-red-400">
+            {fieldErrors.name}
+          </div>
         )}
 
         {/* Email */}
-        <label className="block mt-4 text-sm">{t("common:email")}</label>
+        <label className="mt-4 block text-xs font-medium text-slate-700 dark:text-slate-300">
+          {t("common:email")}
+        </label>
         <input
           type="email"
-          className={`border p-2 rounded w-full ${
-            fieldErrors.email ? "border-red-500" : ""
-          }`}
+          className={[
+            "mt-1 w-full rounded-lg border p-2.5 text-sm",
+            "bg-white text-slate-900 placeholder:text-slate-400",
+            "focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-1 focus:ring-offset-slate-100",
+            "dark:bg-slate-900/80 dark:text-slate-100 dark:placeholder:text-slate-500",
+            "dark:focus:ring-offset-slate-900",
+            fieldErrors.email
+              ? "border-red-500 focus:ring-red-500"
+              : "border-slate-300 dark:border-slate-700",
+          ].join(" ")}
           value={form.email}
           onChange={(e) => updateField("email", e.target.value)}
           required
         />
         {fieldErrors.email && (
-          <div className="mt-1 text-xs text-red-600">{fieldErrors.email}</div>
+          <div className="mt-1 text-xs text-red-500 dark:text-red-400">
+            {fieldErrors.email}
+          </div>
         )}
 
         {/* Password */}
-        <label className="block mt-4 text-sm">{t("common:password")}</label>
+        <label className="mt-4 block text-xs font-medium text-slate-700 dark:text-slate-300">
+          {t("common:password")}
+        </label>
         <input
           type="password"
-          className={`border p-2 rounded w-full ${
-            fieldErrors.password ? "border-red-500" : ""
-          }`}
+          className={[
+            "mt-1 w-full rounded-lg border p-2.5 text-sm",
+            "bg-white text-slate-900 placeholder:text-slate-400",
+            "focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-1 focus:ring-offset-slate-100",
+            "dark:bg-slate-900/80 dark:text-slate-100 dark:placeholder:text-slate-500",
+            "dark:focus:ring-offset-slate-900",
+            fieldErrors.password
+              ? "border-red-500 focus:ring-red-500"
+              : "border-slate-300 dark:border-slate-700",
+          ].join(" ")}
           value={form.password}
           onChange={(e) => updateField("password", e.target.value)}
           required
         />
         {fieldErrors.password && (
-          <div className="mt-1 text-xs text-red-600">
+          <div className="mt-1 text-xs text-red-500 dark:text-red-400">
             {fieldErrors.password}
           </div>
         )}
 
         {/* Confirm Password */}
-        <label className="block mt-4 text-sm">
+        <label className="mt-4 block text-xs font-medium text-slate-700 dark:text-slate-300">
           {t("common:confirm_password")}
         </label>
         <input
           type="password"
-          className={`border p-2 rounded w-full ${
-            fieldErrors.confirm_password ? "border-red-500" : ""
-          }`}
+          className={[
+            "mt-1 w-full rounded-lg border p-2.5 text-sm",
+            "bg-white text-slate-900 placeholder:text-slate-400",
+            "focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-1 focus:ring-offset-slate-100",
+            "dark:bg-slate-900/80 dark:text-slate-100 dark:placeholder:text-slate-500",
+            "dark:focus:ring-offset-slate-900",
+            fieldErrors.confirm_password
+              ? "border-red-500 focus:ring-red-500"
+              : "border-slate-300 dark:border-slate-700",
+          ].join(" ")}
           value={form.confirm_password}
           onChange={(e) => updateField("confirm_password", e.target.value)}
           required
         />
         {fieldErrors.confirm_password && (
-          <div className="mt-1 text-xs text-red-600">
+          <div className="mt-1 text-xs text-red-500 dark:text-red-400">
             {fieldErrors.confirm_password}
           </div>
         )}
 
-        <div className="mt-2">
-          <div className="text-xs text-gray-500 font-medium">
+        {/* Password requirements */}
+        <div className="mt-3">
+          <div className="text-xs font-medium text-slate-500 dark:text-slate-400">
             {t("password_requirements_title")}
           </div>
-          <ul className="mt-1 text-xs list-disc pl-5">
+          <ul className="mt-1 list-disc pl-5 text-xs">
             <ChecklistItem
               ok={pwChecks.length}
               label={t("password_rule_length")}
@@ -382,36 +436,39 @@ export default function Signup() {
 
         {/* Submit */}
         <button
-          className="mt-4 w-full bg-black text-white rounded py-2 disabled:opacity-50"
-          disabled={
-            !form.shop_name ||
-            !form.name ||
-            !form.email ||
-            !allPwOk ||
-            !pwMatch ||
-            !!logoMeta.error
-          }
+          type="submit"
+          className={[
+            "mt-4 flex w-full items-center justify-center rounded-full px-4 py-2.5 text-sm font-medium text-white shadow-lg shadow-indigo-500/40 transition",
+            "bg-indigo-500 hover:-translate-y-[1px] hover:bg-indigo-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-300 active:translate-y-0 active:scale-[0.99]",
+            "disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0 disabled:hover:bg-indigo-500",
+          ].join(" ")}
+          disabled={isSubmitDisabled}
         >
           {t("signup")}
         </button>
 
-        <div className="mt-4 text-center text-sm">
+        {/* Footer: already have an account + Google sign-in */}
+        <div className="mt-5 text-center text-xs text-slate-500 dark:text-slate-400">
           {t("or_signin")}{" "}
-          <Link to="/login" className="underline text-blue-700">
+          <Link
+            to="/login"
+            className="font-medium text-indigo-600 underline-offset-2 hover:text-indigo-500 hover:underline dark:text-indigo-300 dark:hover:text-indigo-200"
+          >
             {t("login")}
           </Link>
-          <div className="mt-4 text-center">
-            <button
-              type="button"
-              onClick={loginGoogle}
-              className="flex items-center justify-center w-full gap-2 border border-gray-300 rounded py-2 hover:bg-gray-50 transition-colors"
-            >
-              <GoogleIcon size={18} />
-              <span>{t("sign_in_google")}</span>
-            </button>
-          </div>
+        </div>
+
+        <div className="mt-3">
+          <button
+            type="button"
+            onClick={loginGoogle}
+            className="flex w-full items-center justify-center gap-2 rounded-full border border-slate-300 bg-slate-50 px-4 py-2.5 text-xs font-medium text-slate-700 transition hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300 dark:border-slate-700/80 dark:bg-slate-900/70 dark:text-slate-200 dark:hover:bg-slate-800/80 dark:focus-visible:ring-slate-500"
+          >
+            <GoogleIcon size={18} />
+            <span>{t("sign_in_google")}</span>
+          </button>
         </div>
       </form>
-    </div>
+    </AuthLayout>
   );
 }
