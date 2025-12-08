@@ -1,7 +1,6 @@
 // web/src/pages/Login.jsx
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import LanguageSwitcher from "../components/LanguageSwitcher.jsx";
 import api from "../lib/api";
 import {
   mapFieldValidationErrors,
@@ -10,6 +9,7 @@ import {
 import GoogleIcon from "../components/icons/GoogleIcon.jsx";
 import { useToast } from "../components/ToastProvider";
 import { Link, useNavigate } from "react-router-dom";
+import AuthLayout from "../components/layout/AuthLayout.jsx";
 
 const API = import.meta.env.VITE_API_URL || "http://localhost:8000/api";
 
@@ -22,18 +22,18 @@ export default function Login() {
   const { showToast } = useToast();
   const navigate = useNavigate();
 
+  const isOwner = mode === "owner";
+
   // Preselect mode & email via URL params
   useEffect(() => {
     const p = new URLSearchParams(location.search);
     const m = p.get("mode");
     const e = p.get("email");
     if (m === "staff" || m === "owner") setMode(m);
-    if (e) {
-      setForm((prev) => ({ ...prev, email: e }));
-    }
+    if (e) setForm((prev) => ({ ...prev, email: e }));
   }, []);
 
-  // Google login result handler (same as before)
+  // Google login result handler
   useEffect(() => {
     const handler = (ev) => {
       if (ev.data?.type === "google-auth-result") {
@@ -51,10 +51,9 @@ export default function Login() {
     };
     window.addEventListener("message", handler);
     return () => window.removeEventListener("message", handler);
-  }, [t]);
+  }, [t, navigate]);
 
   const loginGoogle = () => {
-    // open popup to backend redirect endpoint
     window.open(
       `${API}/auth/google/redirect`,
       "google",
@@ -62,11 +61,9 @@ export default function Login() {
     );
   };
 
-  // Update form field + clear related errors
   const updateField = (field, value) => {
     setForm((prev) => ({ ...prev, [field]: value }));
 
-    // Clear field-level error
     setFieldErrors((prev) => {
       if (!prev[field]) return prev;
       const next = { ...prev };
@@ -84,25 +81,22 @@ export default function Login() {
 
     const email = form.email.trim();
     const password = form.password;
-    const endpoint = mode === "owner" ? "/auth/login" : "/staff/login";
+    const endpoint = isOwner ? "/auth/login" : "/staff/login";
 
     try {
       const res = await api.post(endpoint, { email, password });
       const data = res.data;
 
       if (data?.success) {
-        // backend: { success, message: "LOGIN_SUCCESS", data: { token } }
         const token = data.data?.token ?? data.token;
         if (token) {
           localStorage.setItem("token", token);
-          localStorage.setItem("tokenType", mode); // 'owner' | 'staff'
-          // Shared landing: Orders
+          localStorage.setItem("tokenType", mode);
           navigate("/orders", { replace: true });
           return;
         }
       }
     } catch (err) {
-      // Network or no response
       if (!err.response) {
         showToast({ type: "error", message: getGlobalErrorFromAxios(err, t) });
         return;
@@ -110,7 +104,6 @@ export default function Login() {
 
       const { status, data } = err.response;
 
-      // Validation error (422) → field-level errors
       if (status === 422 && data?.errors && typeof data.errors === "object") {
         const fe = mapFieldValidationErrors(data.errors, t);
         setFieldErrors(fe);
@@ -122,114 +115,126 @@ export default function Login() {
         return;
       }
 
-      // Non-validation errors with message as code:
-      // e.g. ACCOUNT_NOT_FOUND, INVALID_CREDENTIAL, EMAIL_NOT_VERIFIED,
-      // STAFF_INACTIVE, INVITE_PENDING, etc.
       if (data?.message) {
         const messageCode = data.message;
-
-        // Owner / staff-specific panel (verify, signup, reset, etc.)
-        setErrBlock({
-          code: messageCode,
-          email,
-          mode,
-        });
+        setErrBlock({ code: messageCode, email, mode });
         return;
       }
 
-      // Fallback
       showToast({ type: "error", message: getGlobalErrorFromAxios(err, t) });
     }
   };
 
-  return (
-    <div className="min-h-screen relative bg-gray-50 flex items-center justify-center p-4">
-      <LanguageSwitcher className="fixed top-4 right-4" />
-
-      <form
-        onSubmit={submit}
-        className="bg-white shadow-xl rounded-2xl w-full max-w-md p-8"
+  // Mode toggle UI (goes into AuthLayout headerRight)
+  const modeToggle = (
+    <div className="inline-flex rounded-full border border-slate-200 bg-slate-50 p-1 text-[11px] font-medium text-slate-600 shadow-sm dark:border-slate-700/60 dark:bg-slate-900/80 dark:text-slate-300">
+      <button
+        type="button"
+        onClick={() => setMode("owner")}
+        className={[
+          "flex items-center gap-1 rounded-full px-3 py-1 transition-all",
+          isOwner
+            ? "bg-slate-900 text-slate-100 shadow-sm dark:bg-slate-950"
+            : "text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-100",
+        ].join(" ")}
       >
-        {/* Mode toggle */}
-        <div className="flex gap-2 mb-4">
-          <button
-            type="button"
-            onClick={() => {
-              setMode("owner");
-            }}
-            className={`flex-1 py-2 rounded-md border text-sm font-medium transition ${
-              mode === "owner"
-                ? "bg-black text-white border-black"
-                : "bg-white text-gray-600 border-gray-300"
-            }`}
-          >
-            {t("login_type_owner")}
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              setMode("staff");
-            }}
-            className={`flex-1 py-2 rounded-md border text-sm font-medium transition ${
-              mode === "staff"
-                ? "bg-black text-white border-black"
-                : "bg-white text-gray-600 border-gray-300"
-            }`}
-          >
-            {t("login_type_staff")}
-          </button>
-        </div>
+        <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+        {t("login_type_owner_short") || t("login_type_owner")}
+      </button>
+      <button
+        type="button"
+        onClick={() => setMode("staff")}
+        className={[
+          "flex items-center gap-1 rounded-full px-3 py-1 transition-all",
+          !isOwner
+            ? "bg-slate-900 text-slate-100 shadow-sm dark:bg-slate-950"
+            : "text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-100",
+        ].join(" ")}
+      >
+        <span className="h-1.5 w-1.5 rounded-full bg-indigo-400" />
+        {t("login_type_staff_short") || t("login_type_staff")}
+      </button>
+    </div>
+  );
 
-        <h1 className="text-2xl font-semibold mb-2">{t("login")}</h1>
+  const subtitle = isOwner
+    ? t("login_sub_owner") || "Sign in as shop owner"
+    : t("login_sub_staff") || "Sign in as staff";
 
+  return (
+    <AuthLayout title={t("login")} subtitle={subtitle} headerRight={modeToggle}>
+      <form onSubmit={submit}>
         {errBlock && <LoginErrorPanel {...errBlock} t={t} />}
 
-        <label className="block text-sm mt-3">{t("common:email")}</label>
+        {/* Email */}
+        <label className="mt-2 block text-xs font-medium text-slate-700 dark:text-slate-300">
+          {t("common:email")}
+        </label>
         <input
           name="email"
           type="email"
           required
           value={form.email}
           onChange={(e) => updateField("email", e.target.value)}
-          className={`mt-1 border rounded-md w-full p-2 focus:ring-2 focus:ring-black focus:outline-none ${
-            fieldErrors.email ? "border-red-500" : ""
-          }`}
+          className={[
+            "mt-1 w-full rounded-lg border p-2.5 text-sm",
+            "bg-white text-slate-900 placeholder:text-slate-400",
+            "focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-1 focus:ring-offset-slate-100",
+            "dark:bg-slate-900/80 dark:text-slate-100 dark:placeholder:text-slate-500",
+            "dark:focus:ring-offset-slate-900",
+            fieldErrors.email
+              ? "border-red-500 focus:ring-red-500"
+              : "border-slate-300 dark:border-slate-700",
+          ].join(" ")}
           placeholder="name@example.com"
         />
         {fieldErrors.email && (
-          <div className="mt-1 text-xs text-red-600">{fieldErrors.email}</div>
+          <div className="mt-1 text-xs text-red-500 dark:text-red-400">
+            {fieldErrors.email}
+          </div>
         )}
 
-        <label className="block text-sm mt-4">{t("common:password")}</label>
+        {/* Password */}
+        <label className="mt-4 block text-xs font-medium text-slate-700 dark:text-slate-300">
+          {t("common:password")}
+        </label>
         <input
           name="password"
           type="password"
           required
           value={form.password}
           onChange={(e) => updateField("password", e.target.value)}
-          className={`mt-1 border rounded-md w-full p-2 focus:ring-2 focus:ring-black focus:outline-none ${
-            fieldErrors.password ? "border-red-500" : ""
-          }`}
+          className={[
+            "mt-1 w-full rounded-lg border p-2.5 text-sm",
+            "bg-white text-slate-900 placeholder:text-slate-400",
+            "focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-1 focus:ring-offset-slate-100",
+            "dark:bg-slate-900/80 dark:text-slate-100 dark:placeholder:text-slate-500",
+            "dark:focus:ring-offset-slate-900",
+            fieldErrors.password
+              ? "border-red-500 focus:ring-red-500"
+              : "border-slate-300 dark:border-slate-700",
+          ].join(" ")}
           placeholder="••••••••"
         />
         {fieldErrors.password && (
-          <div className="mt-1 text-xs text-red-600">
+          <div className="mt-1 text-xs text-red-500 dark:text-red-400">
             {fieldErrors.password}
           </div>
         )}
 
+        {/* Submit */}
         <button
           type="submit"
-          className="mt-6 w-full py-2 bg-black text-white rounded-md hover:bg-gray-800 transition"
+          className="mt-6 flex w-full items-center justify-center rounded-full bg-indigo-500 px-4 py-2.5 text-sm font-medium text-white shadow-lg shadow-indigo-500/40 transition hover:-translate-y-[1px] hover:bg-indigo-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-300 active:translate-y-0 active:scale-[0.99]"
         >
           {t("login")}
         </button>
 
         {/* Google sign-in (owner only) */}
-        {mode === "owner" && (
+        {isOwner && (
           <button
             type="button"
-            className="mt-3 w-full py-2 border border-gray-300 rounded-md flex items-center justify-center gap-2 text-sm hover:bg-gray-50 transition"
+            className="mt-3 flex w-full items-center justify-center gap-2 rounded-full border border-slate-300 bg-slate-50 px-4 py-2.5 text-xs font-medium text-slate-700 transition hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300 dark:border-slate-700/80 dark:bg-slate-900/70 dark:text-slate-200 dark:hover:bg-slate-800/80 dark:focus-visible:ring-slate-500"
             onClick={loginGoogle}
           >
             <GoogleIcon size={18} />
@@ -238,48 +243,50 @@ export default function Login() {
         )}
 
         {/* Footer links */}
-        <div className="mt-6 text-center text-sm text-gray-600">
-          {mode === "owner" ? (
+        <div className="mt-6 text-center text-xs text-slate-500 dark:text-slate-400">
+          {isOwner ? (
             <>
               {t("create_account")}?{" "}
-              <Link to="/signup" className="text-blue-600 underline">
+              <Link
+                to="/signup"
+                className="font-medium text-indigo-600 underline-offset-2 hover:text-indigo-500 hover:underline dark:text-indigo-300 dark:hover:text-indigo-200"
+              >
                 {t("signup")}
               </Link>
             </>
           ) : (
-            <Link
+            <button
               onClick={(e) => {
                 e.preventDefault();
                 setMode("owner");
               }}
-              className="text-blue-600 underline"
+              className="font-medium text-indigo-600 underline-offset-2 hover:text-indigo-500 hover:underline dark:text-indigo-300 dark:hover:text-indigo-200"
             >
               {t("switch_to_owner_login")}
-            </Link>
+            </button>
           )}
         </div>
       </form>
-    </div>
+    </AuthLayout>
   );
 }
 
-/** Inline error box renderer */
+/** Inline error box renderer (unchanged, just reused) */
 function LoginErrorPanel({ code, email, mode, t }) {
   const wrap = (node) => (
-    <div className="mb-3 rounded border border-red-300 bg-red-50 p-3 text-sm text-red-800">
+    <div className="mb-4 rounded-xl border border-red-200 bg-red-50 p-3 text-xs text-red-700 dark:border-red-500/50 dark:bg-red-950/50 dark:text-red-100">
       {node}
     </div>
   );
 
-  // ==== OWNER MODE ====
+  // OWNER
   if (mode === "owner") {
-    // Backend message codes: EMAIL_NOT_VERIFIED, INVALID_CREDENTIAL, ACCOUNT_NOT_FOUND
     if (code === "EMAIL_NOT_VERIFIED") {
       return wrap(
         <>
           {t("login_error_unverified")}{" "}
           <Link
-            className="underline"
+            className="font-medium text-red-700 underline underline-offset-2 dark:text-red-200"
             to={`/verify-email?email=${encodeURIComponent(email)}`}
           >
             {t("verify_now")}
@@ -292,7 +299,7 @@ function LoginErrorPanel({ code, email, mode, t }) {
         <>
           {t("login_error_bad_password")}{" "}
           <Link
-            className="underline"
+            className="font-medium text-red-700 underline underline-offset-2 dark:text-red-200"
             to={`/forgot-password?email=${encodeURIComponent(email)}`}
           >
             {t("reset_password")}
@@ -305,7 +312,7 @@ function LoginErrorPanel({ code, email, mode, t }) {
         <>
           {t("login_error_no_account")}{" "}
           <Link
-            className="underline"
+            className="font-medium text-red-700 underline underline-offset-2 dark:text-red-200"
             to={`/signup?email=${encodeURIComponent(email)}`}
           >
             {t("create_account")}
@@ -316,9 +323,7 @@ function LoginErrorPanel({ code, email, mode, t }) {
     return wrap(t("errors.9000"));
   }
 
-  // ==== STAFF MODE ====
-  // Expected message codes for staff backend:
-  // ACCOUNT_NOT_FOUND, INVITE_PENDING, STAFF_INACTIVE, INVALID_CREDENTIAL
+  // STAFF
   if (mode === "staff") {
     if (code === "ACCOUNT_NOT_FOUND") {
       return wrap(
@@ -347,7 +352,7 @@ function LoginErrorPanel({ code, email, mode, t }) {
         <>
           {t("login_staff_bad_password")}{" "}
           <Link
-            className="underline"
+            className="font-medium text-red-700 underline underline-offset-2 dark:text-red-200"
             to={`/staff-reset?email=${encodeURIComponent(email)}`}
           >
             {t("reset_password")}
@@ -362,6 +367,5 @@ function LoginErrorPanel({ code, email, mode, t }) {
     );
   }
 
-  // fallback
   return wrap(t("errors.9000"));
 }

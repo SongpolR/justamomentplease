@@ -10,8 +10,10 @@ const auth = {
   deactivate: "ปิดใช้งาน",
   verify_now: "ยืนยันตอนนี้",
   reset_password_here: "รีเซ็ตรหัสผ่านที่นี่",
-  login_type_owner: "เจ้าของ",
-  login_type_staff: "พนักงาน",
+  login_type_owner_short: "เจ้าของ",
+  login_type_staff_short: "พนักงาน",
+  login_sub_owner: "เข้าสู่ระบบแบบเจ้าของ",
+  login_sub_staff: "เข้าสู่ระบบแบบพนักงาน",
 
   login_error_unverified: "อีเมลของคุณยังไม่ได้รับการยืนยัน",
   login_error_bad_password: "รหัสผ่านไม่ถูกต้อง",

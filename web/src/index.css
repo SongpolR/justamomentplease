@@ -1,3 +1,49 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* === Global app theme tokens === */
+/* Default = light theme */
+:root {
+  color-scheme: light;
+
+  --app-bg: #f3f4f6; /* page background */
+  --app-surface: #ffffff; /* card surface */
+  --app-surface-subtle: #f9fafb;
+  --app-border-subtle: #e5e7eb;
+  --app-border-strong: #d1d5db;
+  --app-text-main: #111827;
+  --app-text-muted: #6b7280;
+  --app-accent: #6366f1;
+  --app-accent-soft: #e0e7ff;
+}
+
+/* Dark theme overrides */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+
+  --app-bg: #020617;
+  --app-surface: rgba(15, 23, 42, 0.96);
+  --app-surface-subtle: rgba(15, 23, 42, 0.88);
+  --app-border-subtle: rgba(51, 65, 85, 0.85);
+  --app-border-strong: rgba(30, 64, 175, 0.8);
+  --app-text-main: #e5e7eb;
+  --app-text-muted: #9ca3af;
+  --app-accent: #6366f1;
+  --app-accent-soft: rgba(79, 70, 229, 0.2);
+}
+
+/* Small helper classes you can reuse everywhere */
+.app-shell-bg {
+  background: var(--app-bg);
+}
+
+.app-card-surface {
+  background-color: var(--app-surface);
+  border-color: var(--app-border-subtle);
+  color: var(--app-text-main);
+}
+
+.app-text-muted {
+  color: var(--app-text-muted);
+}

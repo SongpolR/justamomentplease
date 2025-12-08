@@ -27,20 +27,21 @@ import Customer from "./pages/Customer.jsx";
 import { Link } from "react-router-dom";
 import ForgotPassword from "./pages/ForgotPassword.jsx";
 import ResetPassword from "./pages/ResetPassword.jsx";
+import ThemeSwitcher from "./components/ThemeSwitcher.jsx";
 
 function TopNav({ role }) {
   const { t } = useTranslation("common");
 
   return (
-    <header className="w-full bg-white border-b border-gray-200 mb-4">
-      <div className="mx-auto max-w-5xl px-4 py-3 flex items-center justify-between">
-        <div className="font-semibold text-sm sm:text-base">
+    <header className="mb-4 w-full border-b border-gray-200 bg-white/90 backdrop-blur-sm dark:border-slate-800 dark:bg-slate-900/90">
+      <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3">
+        <div className="text-sm font-semibold text-slate-800 dark:text-slate-100 sm:text-base">
           {t("app_name")}
         </div>
         <nav className="flex items-center gap-4 text-sm">
           <Link
             to="/orders"
-            className="text-gray-700 hover:text-black underline-offset-4 hover:underline"
+            className="text-slate-700 underline-offset-4 hover:text-slate-900 hover:underline dark:text-slate-300 dark:hover:text-slate-50"
           >
             {t("menu.order_menu")}
           </Link>
@@ -48,19 +49,23 @@ function TopNav({ role }) {
           {role === "owner" && (
             <Link
               to="/settings/shop"
-              className="text-gray-700 hover:text-black underline-offset-4 hover:underline"
+              className="text-slate-700 underline-offset-4 hover:text-slate-900 hover:underline dark:text-slate-300 dark:hover:text-slate-50"
             >
               {t("menu.shop_setting_menu")}
             </Link>
           )}
+
           <Link
             to="/settings/account"
-            className="text-gray-700 hover:text-black underline-offset-4 hover:underline"
+            className="text-slate-700 underline-offset-4 hover:text-slate-900 hover:underline dark:text-slate-300 dark:hover:text-slate-50"
           >
             {t("menu.account_setting_menu")}
           </Link>
 
-          <LanguageSwitcher />
+          <div className="flex items-center gap-2">
+            <ThemeSwitcher />
+            <LanguageSwitcher />
+          </div>
         </nav>
       </div>
     </header>
@@ -77,7 +82,7 @@ function Protected({ children, role }) {
   }
 
   return (
-    <div className="relative min-h-screen bg-gray-50">
+    <div className="app-shell-bg relative min-h-screen text-slate-900 dark:text-slate-100">
       <TopNav role={tokenType} />
       <main className="mx-auto max-w-5xl px-4 pb-8">{children}</main>
     </div>

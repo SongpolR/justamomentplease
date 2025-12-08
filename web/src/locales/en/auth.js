@@ -10,8 +10,10 @@ const auth = {
   deactivate: "Deactivate",
   verify_now: "Verify now",
   reset_password_here: "Reset password here",
-  login_type_owner: "Owner",
-  login_type_staff: "Staff",
+  login_type_owner_short: "Owner",
+  login_type_staff_short: "Staff",
+  login_sub_owner: "Sign in as shop owner",
+  login_sub_staff: "Sign in as staff",
 
   // Owner login error cases
   login_error_unverified: "Your email has not been verified.",
