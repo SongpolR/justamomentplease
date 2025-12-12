@@ -15,6 +15,9 @@ const account = {
     "Europe/London": "Europe/London",
     "America/New_York": "America/New_York",
   },
+  account_settings_subtitle: "จัดการเซสชันและข้อมูลบัญชีพื้นฐานของคุณ",
+  profile_section_title: "โปรไฟล์",
+  change_password_coming_soon: "ฟีเจอร์เปลี่ยนรหัสผ่านจะเพิ่มในเร็ว ๆ นี้",
 };
 
 export default account;

@@ -15,6 +15,10 @@ const account = {
     "Europe/London": "Europe/London",
     "America/New_York": "America/New_York",
   },
+  account_settings_subtitle:
+    "Manage your session and basic account information.",
+  profile_section_title: "Profile",
+  change_password_coming_soon: "Change password will be added soon.",
 };
 
 export default account;
