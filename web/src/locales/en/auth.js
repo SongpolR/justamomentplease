@@ -74,6 +74,12 @@ const auth = {
   reset_password_cta: "Set new password",
   reset_password_success:
     "Your password has been reset successfully. Please continue on login page.",
+  reset_request_security_hint:
+    "For security reasons, we respond the same way whether or not the email exists in our system.",
+  reset_password_subtitle: "Set a new password for your account.",
+  reset_password_invalid_link:
+    "This reset link is invalid or incomplete. Please request a new password reset link.",
+  reset_password_working: "Resetting password...",
 };
 
 export default auth;

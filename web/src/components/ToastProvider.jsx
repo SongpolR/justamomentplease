@@ -6,6 +6,7 @@ import React, {
   useState,
   useEffect,
 } from "react";
+import CloseIcon from "./icons/CloseIcon.jsx";
 
 const ToastContext = createContext(null);
 
@@ -61,7 +62,7 @@ function ToastItem({ toast, onRequestClose, onRemove }) {
   return (
     <div
       className={[
-        "relative flex min-w-[280px] max-w-sm items-start gap-3 rounded-2xl border px-4 py-3.5 text-sm",
+        "relative flex min-w-[280px] max-w-sm gap-3 rounded-2xl border px-4 py-3.5 text-sm",
         "bg-white/95 text-slate-900 shadow-xl shadow-slate-900/10 backdrop-blur-sm",
         "dark:bg-slate-900/95 dark:text-slate-50 dark:shadow-2xl",
         containerTint,
@@ -72,7 +73,7 @@ function ToastItem({ toast, onRequestClose, onRemove }) {
       ].join(" ")}
     >
       {/* Accent dot */}
-      <div className="mt-0.5 flex h-6 w-6 items-center justify-center">
+      <div className="flex h-6 w-6 items-center justify-center">
         <span
           className={[
             "h-2.5 w-2.5 rounded-full",
@@ -83,7 +84,7 @@ function ToastItem({ toast, onRequestClose, onRemove }) {
       </div>
 
       {/* Content */}
-      <div className="flex-1">
+      <div className="flex-1 mt-0.5">
         {toast.title && (
           <div
             className={["mb-0.5 text-[13px] font-semibold", titleTint].join(
@@ -93,20 +94,22 @@ function ToastItem({ toast, onRequestClose, onRemove }) {
             {toast.title}
           </div>
         )}
-        <div className="text-[13px] leading-snug text-slate-700 dark:text-slate-200">
+        <div className="text-[13px] text-slate-700 dark:text-slate-200">
           {toast.message}
         </div>
       </div>
 
       {/* Close button */}
       {toast.dismissible && (
-        <button
-          type="button"
-          onClick={() => onRequestClose(toast.id)}
-          className="ml-1 text-lg font-semibold leading-none text-slate-500 opacity-70 hover:text-slate-800 hover:opacity-100 dark:text-slate-300 dark:hover:text-slate-50"
-        >
-          ×
-        </button>
+        <div className="flex h-6 w-6 items-center justify-center">
+          <button
+            type="button"
+            onClick={() => onRequestClose(toast.id)}
+            className="ml-1 text-lg font-semibold leading-none text-slate-500 opacity-70 hover:text-slate-800 hover:opacity-100 dark:text-slate-300 dark:hover:text-slate-50"
+          >
+            <CloseIcon size={16} />
+          </button>
+        </div>
       )}
     </div>
   );
