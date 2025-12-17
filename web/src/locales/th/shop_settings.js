@@ -22,6 +22,7 @@ const shop_settings = {
   confirm_deactivate: "คุณแน่ใจหรือไม่ว่าต้องการปิดการใช้งานพนักงานนี้?",
   no_staff: "ยังไม่มีพนักงาน",
   staff_status_invited: "เชิญแล้ว (รอการยืนยัน)",
+  staff_already_exists: "พนักงานคนนี้มีอยู่ในร้านของคุณแล้ว",
 
   sound_options: {
     arcade: "ตู้อาร์เคด",
@@ -43,6 +44,11 @@ const shop_settings = {
   clear_logo: "ล้างโลโก้",
   preview_sound: "ลองฟังเสียง",
   timezone_helper: "ใช้กำหนดเวลาแสดงในออเดอร์และการแจ้งเตือนต่าง ๆ",
+  confirm_activate_title: "เปิดใช้งานพนักงานคนนี้?",
+  confirm_activate_message:
+    "พนักงานคนนี้จะสามารถเข้าถึงรายการออเดอร์และอัปเดตสถานะได้",
+  confirm_deactivate_title: "ปิดใช้งานพนักงานคนนี้?",
+  confirm_deactivate_message: "พนักงานคนนี้จะไม่สามารถเข้าถึงระบบได้อีกต่อไป",
 };
 
 export default shop_settings;

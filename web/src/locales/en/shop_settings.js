@@ -22,6 +22,11 @@ const shop_settings = {
   confirm_deactivate: "Are you sure you want to deactivate this staff?",
   no_staff: "No staff members found.",
   staff_status_invited: "Invited (pending)",
+  staff_already_exists: "This staff already exists in your shop.",
+  staff_reset_subtitle:
+    "Set a new password to regain access to your staff account",
+  staff_reset_footer_hint:
+    "If this link doesn’t work, request a new reset email from the login page.",
 
   sound_options: {
     arcade: "Arcade",
@@ -43,6 +48,12 @@ const shop_settings = {
   clear_logo: "Clear logo",
   preview_sound: "Preview sound",
   timezone_helper: "Used for order timestamps and notifications.",
+  confirm_activate_title: "Activate staff?",
+  confirm_activate_message:
+    "This staff will be able to access orders and update statuses.",
+  confirm_deactivate_title: "Deactivate staff?",
+  confirm_deactivate_message:
+    "This staff will no longer be able to access the system.",
 };
 
 export default shop_settings;

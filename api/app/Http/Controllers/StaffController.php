@@ -10,64 +10,84 @@ use Illuminate\Validation\ValidationException;
 
 class StaffController extends Controller
 {
-    /**
-     * List staff for the (single) shop.
-     * Owner-only (protect via middleware: ['owner','verified'])
-     */
     public function index(Request $req)
     {
-        // You may already resolve owner/shop from token; adapt as needed.
-        // For MVP: single shop
-        $shop = DB::table('shops')->first();
+        $shopId = $req->attributes->get('shop_id');
 
+        if (!$shopId) {
+            return response()->json([
+                'success' => false,
+                'message' => 'UNAUTHORIZED',
+                'errors'  => [config('errorcodes.UNAUTHORIZED')],
+            ], 401);
+        }
+
+        $shop = DB::table('shops')->where('id', $shopId)->first();
         if (!$shop) {
-            return response()->json([], 200);
+            // If shop is missing, return empty list but keep response shape stable
+            return response()->json([
+                'success' => true,
+                'data'    => ['staffs' => []],
+            ], 200);
         }
 
         // Existing staff for this shop
         $staffs = DB::table('staffs')
             ->where('shop_id', $shop->id)
-            ->get();
+            ->orderBy('created_at', 'asc')
+            ->get(['id', 'name', 'email', 'is_active', 'created_at']);
 
-        // Pending invites (not yet accepted)
+        // Pending invites (not accepted + not expired)
         $invites = DB::table('staff_invites')
             ->where('shop_id', $shop->id)
-            ->get();
+            ->whereNull('accepted_at')
+            ->where('expires_at', '>', now())
+            ->orderBy('created_at', 'asc')
+            ->get(['name', 'email', 'created_at', 'expires_at']);
 
-        // Build unified list
+        $existingEmails = $staffs
+            ->pluck('email')
+            ->filter()
+            ->map(fn($e) => strtolower(trim($e)))
+            ->values()
+            ->all();
+
         $rows = [];
 
-        // Real staff rows
+        // Staff rows
         foreach ($staffs as $s) {
             $rows[] = [
-                'id'        => $s->id,
-                'name'      => $s->name,
-                'email'     => $s->email,
-                'is_active' => (bool) $s->is_active,
-                'kind'      => 'staff',      // <— key field
+                'id'         => (int) $s->id,
+                'name'       => $s->name,
+                'email'      => $s->email,
+                'is_active'  => (bool) $s->is_active,
+                'kind'       => 'staff',
+                'created_at' => $s->created_at,
             ];
         }
 
-        // Pending invite rows (only for emails not already in staff)
-        $existingEmails = $staffs->pluck('email')->map('strtolower')->all();
-
+        // Invite rows (skip if staff already exists)
         foreach ($invites as $inv) {
-            if (in_array(strtolower($inv->email), $existingEmails, true)) {
-                continue; // staff already exists, skip
+            $invEmail = strtolower(trim($inv->email ?? ''));
+            if ($invEmail === '' || in_array($invEmail, $existingEmails, true)) {
+                continue;
             }
 
             $rows[] = [
-                'id'        => null,
-                'name'      => $inv->name,
-                'email'     => $inv->email,
-                'is_active' => false,
-                'kind'      => 'invite',    // <— distinguish in UI
+                'id'         => null,
+                'name'       => $inv->name,
+                'email'      => $inv->email,
+                'is_active'  => false,
+                'kind'       => 'invite',
                 'invited_at' => $inv->created_at,
                 'expires_at' => $inv->expires_at,
             ];
         }
 
-        return response()->json($rows, 200);
+        return response()->json([
+            'success' => true,
+            'data'    => ['staffs' => $rows],
+        ], 200);
     }
 
     /**

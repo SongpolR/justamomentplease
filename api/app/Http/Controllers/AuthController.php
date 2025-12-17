@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\ValidationException;
 use App\Mail\VerifyEmailMail;
-use App\Mail\PasswordResetMail;
+use App\Mail\ResetPasswordMail;
 
 class AuthController extends Controller
 {
@@ -85,7 +85,13 @@ class AuthController extends Controller
           now()->addMinutes(60),
           ['email' => $req->email]
         );
-        Mail::to($req->email)->send(new VerifyEmailMail($verifyUrl));
+
+        $options = [
+          'appName'     => config('app.name'),
+          'expiresMinutes' => 60,
+          'supportEmail' => 'support@vipa.com',
+        ];
+        Mail::to($req->email)->send(new VerifyEmailMail($verifyUrl, $options));
 
         return response()->json([
           'success' => true,
@@ -295,7 +301,12 @@ class AuthController extends Controller
         ['email' => $owner->email]
       );
 
-      Mail::to($owner->email)->send(new VerifyEmailMail($verifyUrl));
+      $options = [
+        'appName'     => config('app.name'),
+        'expiresMinutes' => 60,
+        'supportEmail' => 'support@vipa.com',
+      ];
+      Mail::to($req->email)->send(new VerifyEmailMail($verifyUrl, $options));
 
       return response()->json([
         'success' => true,
@@ -359,7 +370,12 @@ class AuthController extends Controller
       // Link to your SPA reset page with token+email as query
       $frontend = config('app.frontend_origin', 'http://localhost:5173');
       $resetUrl = $frontend . '/reset-password?token=' . urlencode($plain) . '&email=' . urlencode($owner->email);
-      Mail::to($owner->email)->send(new PasswordResetMail($resetUrl));
+      $options = [
+        'appName'     => config('app.name'),
+        'expiresMinutes' => 60,
+        'supportEmail' => 'support@vipa.com',
+      ];
+      Mail::to($owner->email)->send(new ResetPasswordMail($resetUrl, $options));
       return response()->json([
         'success' => true,
         'message' => 'FORGOT_PASSWORD_EMAIL_SENT',

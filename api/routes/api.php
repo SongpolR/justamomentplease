@@ -11,82 +11,59 @@ use App\Http\Controllers\StaffController;
 use App\Http\Controllers\StaffInviteController;
 use App\Http\Controllers\StaffPasswordResetController;
 
+// Basic health check
+Route::get('/health', function () {
+  return response()->json(['ok' => true]);
+});
+
 /*
 |--------------------------------------------------------------------------
 | Public / No Auth
 |--------------------------------------------------------------------------
 */
 
-// Basic health check
-Route::get('/health', function () {
-  return response()->json(['ok' => true]);
-});
+// Owner auth
+Route::post('/auth/signup', [AuthController::class, 'signup']);
+Route::post('/auth/login',  [AuthController::class, 'login'])->middleware('throttle:10,1');
+Route::post('/auth/forgot-password', [AuthController::class, 'forgotPassword'])->middleware('throttle:5,1');
+Route::post('/auth/reset-password', [AuthController::class, 'resetPassword'])->middleware('throttle:5,1');
 
-// Owner auth (email/password)
-Route::post('/auth/signup', [AuthController::class, 'signup']); // creates owner + shop, sends verify email (no token)
-Route::post('/auth/login',  [AuthController::class, 'login']);  // requires email_verified_at
-Route::post('/auth/forgot-password', [AuthController::class, 'forgotPassword']); // forgot password
-Route::post('/auth/reset-password', [AuthController::class, 'resetPassword']); // reset password
+// Email verification
+Route::get('/auth/verify-email', [AuthController::class, 'verifyEmail'])->name('auth.verify-email');
+Route::post('/auth/resend-verification', [AuthController::class, 'resendVerification'])->middleware('throttle:3,5');
 
-// Email verification (owner)
-Route::get('/auth/verify-email', [AuthController::class, 'verifyEmail'])->name('auth.verify-email'); // signed URL landing
-Route::post('/auth/resend-verification', [AuthController::class, 'resendVerification']); // opaque 200
-
-// Optional: Google Sign-in for owner (keep if you wired it)
+// Optional: Google Sign-in for owner
 Route::get('/auth/google/redirect', [GoogleAuthController::class, 'redirect']);
 Route::get('/auth/google/callback', [GoogleAuthController::class, 'callback']);
 
-// Staff: accept invite (activate & auto-login token returned)
-Route::post('/staff/accept', [StaffInviteController::class, 'accept']);
-
-// Staff: password reset (self-service AFTER activation, always opaque 200 on initiate)
-Route::post('/staff/forgot', [StaffPasswordResetController::class, 'initiate']); // send reset email if active
-Route::post('/staff/reset',  [StaffPasswordResetController::class, 'perform']);  // submit new password w/ token
-
-// Staff: login (handles 3 cases: no account, invite pending, wrong password)
-Route::post('/staff/login',  [StaffController::class, 'login']);
+// Staff auth
+Route::post('/staff/login',  [StaffController::class, 'login'])->middleware('throttle:10,1');
+Route::post('/staff/forgot', [StaffPasswordResetController::class, 'initiate'])->middleware('throttle:5,1');
+Route::post('/staff/reset',  [StaffPasswordResetController::class, 'perform'])->middleware('throttle:5,1');
+Route::post('/staff/accept', [StaffInviteController::class, 'accept'])->middleware('throttle:5,1');
 
 Route::get('/customer/orders/{publicCode}', [OrderController::class, 'showPublic']);
 
-/*
-|--------------------------------------------------------------------------
-| Owner-only (must be authenticated owner + verified email)
-| Middleware aliases are registered in bootstrap/app.php:
-|   'owner'    => \App\Http\Middleware\OwnerTokenAuth::class
-|   'verified' => \App\Http\Middleware\OwnerVerified::class
-|--------------------------------------------------------------------------
-*/
 Route::middleware(['owner', 'verified'])->group(function () {
-  // Shop settings (profile, logo, order numbering policy, sound, etc.)
+  // Shop management
   Route::get('/shop',  [ShopController::class, 'show']);
-  Route::post('/shop',  [ShopController::class, 'update']); // expect multipart/form-data for logo if provided
+  Route::post('/shop',  [ShopController::class, 'update']);
 
-  // Staff management (owner provisions)
+  // Staff management
   Route::get('/staff',                  [StaffController::class, 'index']);
-  Route::post('/staff',                 [StaffController::class, 'create']);      // optional direct create
-  Route::post('/staff/{id}/activate', [StaffController::class, 'activate']);
-  Route::post('/staff/{id}/deactivate', [StaffController::class, 'deactivate']);
+  Route::post('/staff',                 [StaffController::class, 'create']);
+  Route::post('/staff/{staffId}/activate', [StaffController::class, 'activate']);
+  Route::post('/staff/{staffId}/deactivate', [StaffController::class, 'deactivate']);
 
-  // Staff invitations (owner controls activation)
-  Route::post('/staff/invite',         [StaffInviteController::class, 'create']);        // send invite
-  Route::post('/staff/invite/resend',  [StaffInviteController::class, 'resendByOwner']); // resend pending invite
-
-  // (Optional) Owner may also trigger a staff reset email via the same public endpoint server-side,
-  // or you can create an owner-scoped proxy if you prefer strict separation.
+  // Staff invitations
+  Route::post('/staff/invite',         [StaffInviteController::class, 'create']);
+  Route::post('/staff/invite/resend',  [StaffInviteController::class, 'resendByOwner']);
 });
 
-
-/*
-|--------------------------------------------------------------------------
-| Owner OR Staff (either token) — operational endpoints
-| Middleware alias 'any' allows owner OR active staff:
-|   'any' => \App\Http\Middleware\AnyTokenAuth::class
-|--------------------------------------------------------------------------
-*/
 Route::middleware('any')->group(function () {
-  // Orders (create → ready → done)
+  // Orders management
   Route::get('/orders',                        [OrderController::class, 'index']);
-  Route::post('/orders',                       [OrderController::class, 'store']);  // applies daily reset policy
+  Route::post('/orders',                       [OrderController::class, 'store']);
   Route::post('/orders/{orderId}/ready',       [OrderController::class, 'ready']);
   Route::post('/orders/{orderId}/done',        [OrderController::class, 'done']);
 });

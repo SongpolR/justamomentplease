@@ -7,7 +7,7 @@ import Login from "./pages/Login.jsx";
 import Signup from "./pages/Signup.jsx";
 import VerifyEmail from "./pages/VerifyEmail.jsx";
 import StaffSetup from "./pages/StaffSetup.jsx";
-import StaffReset from "./pages/StaffReset.jsx";
+import StaffResetPassword from "./pages/StaffResetPassword.jsx";
 import Orders from "./pages/Orders.jsx";
 import ShopSettings from "./pages/ShopSettings.jsx";
 import AccountSettings from "./pages/AccountSettings.jsx";
@@ -236,7 +236,7 @@ const router = createBrowserRouter([
   { path: "/signup", element: <Signup /> },
   { path: "/verify-email", element: <VerifyEmail /> },
   { path: "/staff-setup", element: <StaffSetup /> },
-  { path: "/staff-reset", element: <StaffReset /> },
+  { path: "/staff-reset-password", element: <StaffResetPassword /> },
   { path: "/customer/orders/:publicCode", element: <Customer /> },
   { path: "/forgot-password", element: <ForgotPassword /> },
   { path: "/reset-password", element: <ResetPassword /> },

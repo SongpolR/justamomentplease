@@ -23,10 +23,11 @@ api.interceptors.response.use(
     const status = error?.response?.status;
     const path = error?.response?.config?.url || "";
 
-    // Ignore 401 only for login API
+    // Ignore 401 only for login and staff login API
     const isLoginEndpoint = path.includes("/auth/login");
+    const isStaffLoginEndpoint = path.includes("/staff/login");
 
-    if (status === 401 && !isLoginEndpoint) {
+    if (status === 401 && !isLoginEndpoint && !isStaffLoginEndpoint) {
       // Clear session anyway
       localStorage.removeItem("token");
       localStorage.removeItem("user");

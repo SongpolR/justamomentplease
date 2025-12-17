@@ -51,6 +51,7 @@ const auth = {
 
   // Staff setup / reset
   staff_setup_title: "เปิดใช้งานบัญชีพนักงาน",
+  staff_setup_subtitle: "ตั้งรหัสผ่านเพื่อเปิดใช้งานบัญชีพนักงานของคุณ",
   staff_set_password: "ตั้งรหัสผ่านและเปิดใช้งาน",
   reset_link_sent: "ส่งลิงก์รีเซ็ตรหัสผ่านเรียบร้อยแล้ว",
   invite_used: "ลิงก์เชิญนี้ถูกใช้งานแล้ว",
@@ -59,6 +60,7 @@ const auth = {
   staff_reset_password_success: "รีเซ็ตรหัสผ่านสำเร็จแล้ว",
   staff_reset_invalid: "ลิงก์สำหรับรีเซ็ตรหัสผ่านไม่ถูกต้อง",
   staff_reset_expired: "ลิงก์สำหรับรีเซ็ตรหัสผ่านหมดอายุแล้ว",
+  staff_setup_footer_hint: "ลิงก์นี้เป็นลิงก์ส่วนบุคคล โปรดอย่าแชร์ให้ผู้อื่น",
 
   reset_request_title: "ลืมรหัสผ่าน?",
   reset_request_intro:
@@ -76,7 +78,12 @@ const auth = {
   reset_password_subtitle: "ตั้งรหัสผ่านใหม่สำหรับบัญชีของคุณ",
   reset_password_invalid_link:
     "ลิงก์รีเซ็ตรหัสผ่านนี้ไม่ถูกต้องหรือข้อมูลไม่ครบถ้วน กรุณาขอรีเซ็ตรหัสผ่านใหม่อีกครั้ง",
-  reset_password_working: "กำลังรีเซ็ตรหัสผ่าน...",
+  staff_reset_subtitle: "ตั้งรหัสผ่านใหม่เพื่อกลับเข้าใช้งานบัญชีพนักงานของคุณ",
+  staff_reset_footer_hint:
+    "หากลิงก์นี้ใช้งานไม่ได้ ให้กลับไปหน้าเข้าสู่ระบบและขออีเมลรีเซ็ตรหัสผ่านใหม่อีกครั้ง",
+  staff_reset_subtitle: "ตั้งรหัสผ่านใหม่เพื่อกลับเข้าใช้งานบัญชีพนักงานของคุณ",
+  staff_reset_footer_hint:
+    "หากลิงก์นี้ใช้งานไม่ได้ ให้กลับไปหน้าเข้าสู่ระบบและขออีเมลรีเซ็ตรหัสผ่านใหม่อีกครั้ง",
 };
 
 export default auth;

@@ -54,6 +54,7 @@ const auth = {
 
   // Staff setup / reset
   staff_setup_title: "Activate Staff Account",
+  staff_setup_subtitle: "Set your password to activate your staff account",
   staff_set_password: "Set password and activate",
   reset_link_sent: "Password reset link sent successfully.",
   invite_used: "This invite has already been used.",
@@ -62,6 +63,8 @@ const auth = {
   staff_reset_password_success: "Your password has been reset successfully.",
   staff_reset_invalid: "This reset link is invalid.",
   staff_reset_expired: "This reset link has expired.",
+  staff_setup_footer_hint:
+    "This setup link is personal and should not be shared.",
 
   reset_request_title: "Forgot your password?",
   reset_request_intro:
@@ -79,7 +82,10 @@ const auth = {
   reset_password_subtitle: "Set a new password for your account.",
   reset_password_invalid_link:
     "This reset link is invalid or incomplete. Please request a new password reset link.",
-  reset_password_working: "Resetting password...",
+  staff_reset_subtitle:
+    "Set a new password to regain access to your staff account",
+  staff_reset_footer_hint:
+    "If this link doesn’t work, request a new reset email from the login page.",
 };
 
 export default auth;

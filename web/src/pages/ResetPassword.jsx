@@ -15,7 +15,7 @@ const pwOk = (pw) => ({
   length: pw.length >= 8,
   upper: /[A-Z]/.test(pw),
   number: /[0-9]/.test(pw),
-  allowed: /^[A-Za-z0-9!@#$%^&*._-]+$/.test(pw),
+  allowed: /[!@#$%^&*._-]/.test(pw),
 });
 
 export default function ResetPassword() {
@@ -225,9 +225,7 @@ export default function ResetPassword() {
           disabled={!allPwOk || !match || submitting || !tokenParam || !email}
           className="mt-4 inline-flex w-full items-center justify-center rounded-full bg-indigo-500 px-4 py-2.5 text-sm font-medium text-white shadow-lg shadow-indigo-500/35 transition hover:-translate-y-[1px] hover:bg-indigo-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-300 active:translate-y-0 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
         >
-          {submitting
-            ? t("reset_password_working") || "Resetting..."
-            : t("reset_password_cta")}
+          {t("reset_password_cta")}
         </button>
 
         <div className="mt-4 flex items-center justify-center">

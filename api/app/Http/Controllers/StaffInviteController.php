@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 use App\Mail\StaffInviteMail;
 use Illuminate\Validation\ValidationException;
+use Illuminate\Support\Facades\Schema;
 
 class StaffInviteController extends Controller
 {
@@ -20,63 +21,104 @@ class StaffInviteController extends Controller
                 'name'  => 'nullable|string|max:120',
             ]);
 
-            // For MVP, assume single shop per owner
-            $shop = DB::table('shops')->first();
+            $shopId = $req->attributes->get('shop_id');
+            if (!$shopId) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'UNAUTHORIZED',
+                ], 401);
+            }
+
+            $email = strtolower(trim((string) $req->email));
+            $name  = $req->name !== null ? trim((string) $req->name) : null;
+
+            $shop = DB::table('shops')->where('id', $shopId)->first();
             if (!$shop) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'SHOP_NOT_FOUND', // front-end can map errors.SHOP_NOT_FOUND
+                    'message' => 'SHOP_NOT_FOUND',
                 ], 404);
             }
 
             // If staff already exists, just return OK (no user enumeration)
-            // NOTE: Use "staffs" to be consistent with staff login query
-            $staff = DB::table('staffs')->where('email', $req->email)->first();
+            // (Prefer scoping by shop_id if your schema supports it)
+            $staffQ = DB::table('staffs')->where('email', $email);
+            if (Schema::hasColumn('staffs', 'shop_id')) {
+                $staffQ->where('shop_id', $shopId);
+            }
+            $staff = $staffQ->first();
+
             if ($staff) {
                 return response()->json([
                     'success' => true,
-                    'message' => 'STAFF_ALREADY_EXISTS', // optional code if you want to differentiate
+                    'message' => 'STAFF_ALREADY_EXISTS',
                 ], 200);
             }
 
-            // Create or update invite
             $token   = Str::random(48);
             $expires = now()->addHours(72);
 
-            DB::table('staff_invites')->updateOrInsert(
-                ['email' => $req->email, 'shop_id' => $shop->id],
-                [
-                    'name'        => $req->name,
+            // Update existing invite (same shop+email) OR insert new one
+            $existing = DB::table('staff_invites')
+                ->where('shop_id', $shopId)
+                ->where('email', $email)
+                ->first();
+
+            if ($existing) {
+                DB::table('staff_invites')
+                    ->where('id', $existing->id)
+                    ->update([
+                        'name'        => $name,
+                        'token'       => $token,
+                        'expires_at'  => $expires,
+                        'accepted_at' => null,
+                        'updated_at'  => now(),
+                    ]);
+            } else {
+                DB::table('staff_invites')->insert([
+                    'shop_id'     => $shopId,
+                    'email'       => $email,
+                    'name'        => $name,
                     'token'       => $token,
                     'expires_at'  => $expires,
                     'accepted_at' => null,
-                    'updated_at'  => now(),
                     'created_at'  => now(),
-                ]
-            );
+                    'updated_at'  => now(),
+                ]);
+            }
 
-            $frontend  = config('app.frontend_origin', 'http://localhost:5173');
+            $frontend = rtrim(config('app.frontend_origin', 'http://localhost:5173'), '/');
             $acceptUrl = $frontend
                 . '/staff-setup?token=' . urlencode($token)
-                . '&email=' . urlencode($req->email);
+                . '&email=' . urlencode($email);
 
-            Mail::to($req->email)->send(new StaffInviteMail($acceptUrl, $shop->name));
+            // Brand options for the new themed email (safe defaults if null)
+            $options = [
+                'appName'     => config('app.name'),
+                'appSubtitle' => 'Virtual Pager',
+                'logoUrl'     => $shop->logo_url ? $shop->logo_url : (config('app.url') . '/app-icon.png'),
+                'expireHours' => 72,
+                'supportEmail' => 'support@vipa.com',
+                //'footerNote'   => 'Sent by shop owner.',
+            ];
+
+            Mail::to($email)->send(new StaffInviteMail($acceptUrl, $shop->name, $options));
 
             return response()->json([
                 'success' => true,
                 'message' => 'INVITE_SENT',
             ], 200);
         } catch (ValidationException $e) {
-            // Map Laravel validation rules → numeric error codes in config/errorcodes.php
+            // Map Laravel validation rules → numeric error codes
             $map = [
                 'REQUIRED' => config('errorcodes.REQUIRED_FIELD'),
                 'EMAIL'    => config('errorcodes.INVALID_EMAIL'),
                 'STRING'   => config('errorcodes.INVALID_FORMAT'),
-                'MAX'      => config('errorcodes.TOO_LONG')  ?? config('errorcodes.VALIDATION_ERROR'),
+                'MAX'      => config('errorcodes.TOO_LONG') ?? config('errorcodes.VALIDATION_ERROR'),
             ];
 
             $errors = [];
-            $failed = $e->validator->failed(); // field => [rule => params]
+            $failed = $e->validator->failed();
 
             foreach ($failed as $field => $rules) {
                 foreach ($rules as $rule => $params) {
@@ -259,7 +301,17 @@ class StaffInviteController extends Controller
         $frontend = config('app.frontend_origin', 'http://localhost:5173');
         $acceptUrl = $frontend . '/staff-setup?token=' . urlencode($token) . '&email=' . urlencode($email);
 
-        Mail::to($email)->send(new StaffInviteMail($acceptUrl, $shop?->name ?? 'Your Shop'));
+        // Brand options for the new themed email (safe defaults if null)
+        $options = [
+            'appName'     => config('app.name'),
+            'appSubtitle' => 'Virtual Pager',
+            'logoUrl'     => $shop->logo_url ? $shop->logo_url : (config('app.url') . '/app-icon.png'),
+            'expireHours' => 72,
+            'supportEmail' => 'support@vipa.com',
+            //'footerNote'   => 'Sent by shop owner.',
+        ];
+
+        Mail::to($email)->send(new StaffInviteMail($acceptUrl, $shop->name, $options));
 
         return response()->json(['success' => true, 'message' => 'OK'], 200);
     }

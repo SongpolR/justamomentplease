@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Mail;
 
 use Illuminate\Bus\Queueable;
@@ -10,11 +11,29 @@ class VerifyEmailMail extends Mailable
   use Queueable, SerializesModels;
 
   public string $verifyUrl;
+  public string $appName;
+  public int $expiresMinutes;
+  public ?string $supportEmail;
 
-  public function __construct(string $verifyUrl) { $this->verifyUrl = $verifyUrl; }
 
-  public function build() {
-    return $this->subject('Verify your email')
-      ->view('emails.verify')->with(['verifyUrl'=>$this->verifyUrl]);
+  public function __construct(string $verifyUrl, array $options = [])
+  {
+    $this->verifyUrl    = $verifyUrl;
+    $this->expiresMinutes = $options['expiresMinutes'] ?? 60;
+    $this->appName     = $options['appName'] ?? config('app.name');
+    $this->supportEmail = $options['supportEmail'] ?? null;
+  }
+
+  public function build()
+  {
+    return $this
+      ->subject('Verify your email address')
+      ->view('emails.verify-email')
+      ->with([
+        'verifyUrl'    => $this->verifyUrl,
+        'expiresMinutes'      => $this->expiresMinutes,
+        'appName'      => $this->appName,
+        'supportEmail' => $this->supportEmail,
+      ]);
   }
 }

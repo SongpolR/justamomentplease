@@ -202,9 +202,6 @@ export default function Signup() {
     }
   };
 
-  const subtitle =
-    t("signup_subtitle") || t("signup_desc") || t("signup_sub_owner") || "";
-
   const isSubmitDisabled =
     !form.shop_name ||
     !form.name ||
@@ -214,7 +211,7 @@ export default function Signup() {
     !!logoMeta.error;
 
   return (
-    <AuthLayout title={t("create_account")} subtitle={subtitle}>
+    <AuthLayout title={t("create_account")} subtitle={t("signup_subtitle")}>
       <form onSubmit={submit} encType="multipart/form-data">
         {/* Shop name */}
         <label className="mt-2 block text-xs font-medium text-slate-700 dark:text-slate-300">

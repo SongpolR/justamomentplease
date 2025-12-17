@@ -1,39 +1,40 @@
-// web/src/pages/StaffSetup.jsx
+// web/src/pages/StaffResetPassword.jsx
 import React, { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import ChecklistItem from "../components/ChecklistItem.jsx";
-import api from "../lib/api.js";
+import api from "../lib/api";
 import {
   mapFieldValidationErrors,
   getGlobalErrorFromAxios,
-} from "../lib/errorHelpers.js";
-import { useNavigate, Link } from "react-router-dom";
-import { useToast } from "../components/ToastProvider.jsx";
+} from "../lib/errorHelpers";
+import { Link, useNavigate } from "react-router-dom";
+import { useToast } from "../components/ToastProvider";
 import AuthLayout from "../components/layout/AuthLayout.jsx";
 
 const pwOk = (pw) => ({
   length: pw.length >= 8,
   upper: /[A-Z]/.test(pw),
   number: /[0-9]/.test(pw),
+  // keep consistent with your reset/setup validations
   allowed: /[!@#$%^&*._-]/.test(pw),
 });
 
-export default function StaffSetup() {
+export default function StaffResetPassword() {
   const { t } = useTranslation("auth");
   const navigate = useNavigate();
   const { showToast } = useToast();
 
   const params = new URLSearchParams(location.search);
-  const tokenParam = params.get("token") || "";
   const email = params.get("email") || "";
+  const token = params.get("token") || "";
 
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [fieldErrors, setFieldErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
 
-  // lock submit when invite is not usable
-  const [inviteBlock, setInviteBlock] = useState(null); // 'invalid' | 'expired' | 'used' | null
+  // lock submit when reset link not usable
+  const [resetBlock, setResetBlock] = useState(null); // 'invalid' | 'expired' | null
 
   const checks = useMemo(() => pwOk(password), [password]);
   const allPwOk =
@@ -45,7 +46,7 @@ export default function StaffSetup() {
 
   const match = password && confirm && password === confirm;
 
-  const updateFieldError = (field) => {
+  const clearFieldError = (field) => {
     setFieldErrors((prev) => {
       if (!prev[field]) return prev;
       const next = { ...prev };
@@ -56,48 +57,38 @@ export default function StaffSetup() {
 
   const handlePasswordChange = (value) => {
     setPassword(value);
-    updateFieldError("password");
-    if (inviteBlock) setInviteBlock(null);
+    clearFieldError("new_password");
+    clearFieldError("password");
+    if (resetBlock) setResetBlock(null);
   };
 
   const handleConfirmChange = (value) => {
     setConfirm(value);
-    if (inviteBlock) setInviteBlock(null);
+    if (resetBlock) setResetBlock(null);
   };
 
-  const toastInviteBlock = (code) => {
-    if (code === "INVITE_INVALID") {
-      setInviteBlock("invalid");
+  const toastResetBlock = (code) => {
+    if (code === "RESET_INVALID") {
+      setResetBlock("invalid");
       showToast({
         type: "error",
         message:
-          t("invite_invalid") ||
-          "This invite link is not valid. Please ask the owner to resend the invitation.",
+          t("staff_reset_invalid") ||
+          "This reset link is not valid. Please request a new reset email.",
       });
       return;
     }
-    if (code === "INVITE_EXPIRED") {
-      setInviteBlock("expired");
+    if (code === "RESET_EXPIRED") {
+      setResetBlock("expired");
       showToast({
         type: "warning",
         message:
-          t("invite_expired") ||
-          "This invite link has expired. Please ask the owner to resend the invitation.",
-      });
-      return;
-    }
-    if (code === "INVITE_USED") {
-      setInviteBlock("used");
-      showToast({
-        type: "info",
-        message:
-          t("invite_used") ||
-          "This invite has already been used. Please login with your staff account.",
+          t("staff_reset_expired") ||
+          "This reset link has expired. Please request a new reset email.",
       });
       return;
     }
 
-    // fallback: errors.<CODE> or generic
     const key = `errors.${code}`;
     const msg = t(key) !== key ? t(key) : t("errors.9000");
     showToast({ type: "error", message: msg });
@@ -105,51 +96,52 @@ export default function StaffSetup() {
 
   const submit = async (e) => {
     e.preventDefault();
-
     setFieldErrors({});
-    setInviteBlock(null);
+    setResetBlock(null);
 
-    // Guard
-    if (!tokenParam || !email) {
+    // Guard missing params
+    if (!email || !token) {
+      setResetBlock("invalid");
       showToast({
         type: "error",
         message:
-          t("invite_invalid") ||
-          "This invite link is not valid. Please ask the owner to resend the invitation.",
+          t("staff_reset_invalid") ||
+          "This reset link is not valid. Please request a new reset email.",
       });
-      setInviteBlock("invalid");
       return;
     }
+
+    // Guard password mismatch/rules
+    if (!allPwOk || !match) return;
 
     setSubmitting(true);
 
     try {
-      const res = await api.post("/staff/accept", {
+      const res = await api.post("/staff/reset", {
         email,
-        token: tokenParam,
-        password,
+        token,
+        new_password: password,
       });
 
       const data = res.data;
 
       if (data?.success) {
-        const apiToken = data.data?.token ?? data.token;
-        if (apiToken) {
-          localStorage.setItem("token", apiToken);
-          localStorage.setItem("tokenType", "staff");
-        }
-
         showToast({
           type: "success",
-          message: t("staff_setup_success") || "Account activated.",
+          message:
+            t("staff_reset_password_success") ||
+            "Password updated successfully.",
         });
 
-        navigate("/", { replace: true });
+        // go to staff login prefilled
+        navigate(`/login?mode=staff&email=${encodeURIComponent(email)}`, {
+          replace: true,
+        });
         return;
       }
 
       if (data?.message) {
-        toastInviteBlock(data.message);
+        toastResetBlock(data.message);
         return;
       }
 
@@ -162,6 +154,7 @@ export default function StaffSetup() {
 
       const { status, data } = err.response;
 
+      // Validation
       if (status === 422 && data?.errors && typeof data.errors === "object") {
         const fe = mapFieldValidationErrors(data.errors, t);
         setFieldErrors(fe);
@@ -173,8 +166,9 @@ export default function StaffSetup() {
         return;
       }
 
+      // Business codes
       if (data?.message) {
-        toastInviteBlock(data.message);
+        toastResetBlock(data.message);
         return;
       }
 
@@ -185,17 +179,17 @@ export default function StaffSetup() {
   };
 
   const subtitle =
-    t("staff_setup_subtitle") ||
-    "Set your password to activate your staff account";
+    t("staff_reset_subtitle") ||
+    "Set a new password to regain access to your staff account";
 
   return (
-    <AuthLayout title={t("staff_setup_title")} subtitle={subtitle}>
+    <AuthLayout title={t("reset_password")} subtitle={subtitle}>
       <form onSubmit={submit}>
         {/* Email pill */}
         {email && (
           <div className="mb-3 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-700 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-200">
             <span className="text-slate-500 dark:text-slate-400">
-              {t("email") || "Email"}:
+              {t("common:email") || "Email"}:
             </span>{" "}
             <span className="font-mono">{email}</span>
           </div>
@@ -214,7 +208,7 @@ export default function StaffSetup() {
               "focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-1 focus:ring-offset-slate-100",
               "dark:bg-slate-900/80 dark:text-slate-100 dark:placeholder:text-slate-500",
               "dark:focus:ring-offset-slate-900",
-              fieldErrors.password
+              fieldErrors.new_password || fieldErrors.password
                 ? "border-red-500 focus:ring-red-500"
                 : "border-slate-300 dark:border-slate-700",
             ].join(" ")}
@@ -223,9 +217,9 @@ export default function StaffSetup() {
             required
             autoComplete="new-password"
           />
-          {fieldErrors.password && (
+          {(fieldErrors.new_password || fieldErrors.password) && (
             <div className="mt-1 text-xs text-red-500 dark:text-red-400">
-              {fieldErrors.password}
+              {fieldErrors.new_password || fieldErrors.password}
             </div>
           )}
         </div>
@@ -243,20 +237,13 @@ export default function StaffSetup() {
               "focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-1 focus:ring-offset-slate-100",
               "dark:bg-slate-900/80 dark:text-slate-100 dark:placeholder:text-slate-500",
               "dark:focus:ring-offset-slate-900",
-              fieldErrors.confirm_password
-                ? "border-red-500 focus:ring-red-500"
-                : "border-slate-300 dark:border-slate-700",
+              "border-slate-300 dark:border-slate-700",
             ].join(" ")}
             value={confirm}
             onChange={(e) => handleConfirmChange(e.target.value)}
             required
             autoComplete="new-password"
           />
-          {fieldErrors.confirm_password && (
-            <div className="mt-1 text-xs text-red-500 dark:text-red-400">
-              {fieldErrors.confirm_password}
-            </div>
-          )}
         </div>
 
         {/* Requirements */}
@@ -287,7 +274,7 @@ export default function StaffSetup() {
 
         {/* CTA */}
         <button
-          disabled={!allPwOk || !match || submitting || !!inviteBlock}
+          disabled={!allPwOk || !match || submitting || !!resetBlock}
           className={[
             "mt-6 flex w-full items-center justify-center rounded-full px-4 py-2.5 text-sm font-medium text-white",
             "bg-indigo-500 shadow-lg shadow-indigo-500/40 transition",
@@ -296,20 +283,21 @@ export default function StaffSetup() {
             "disabled:cursor-not-allowed disabled:opacity-60",
           ].join(" ")}
         >
-          {t("staff_set_password")}
+          {t("reset_password")}
         </button>
 
-        {/* Footer hint + optional link */}
+        {/* Footer hint + link */}
         <div className="mt-3 text-center text-xs text-slate-500 dark:text-slate-400">
-          {t("staff_setup_footer_hint") ||
-            "This setup link is personal and should not be shared."}
-          {inviteBlock === "used" && (
-            <div className="mt-6">
+          {t("staff_reset_footer_hint") ||
+            "If this link doesn’t work, request a new reset email from the login page."}
+
+          {(resetBlock === "invalid" || resetBlock === "expired") && (
+            <div className="mt-2">
               <Link
-                className="underline underline-offset-2 hover:text-slate-700 dark:hover:text-slate-200"
-                to="/login"
+                className="font-medium text-indigo-600 underline underline-offset-2 hover:text-indigo-500 dark:text-indigo-300 dark:hover:text-indigo-200"
+                to={`/login?mode=staff&email=${encodeURIComponent(email)}`}
               >
-                {t("common:back_to_login")}
+                {t("common:back_to_login") || "Back to login"}
               </Link>
             </div>
           )}

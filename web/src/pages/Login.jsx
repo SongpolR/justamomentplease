@@ -350,13 +350,7 @@ function LoginErrorPanel({ code, email, mode, t }) {
     if (code === "INVALID_CREDENTIAL") {
       return wrap(
         <>
-          {t("login_staff_bad_password")}{" "}
-          <Link
-            className="font-medium text-red-700 underline underline-offset-2 dark:text-red-200"
-            to={`/staff-reset?email=${encodeURIComponent(email)}`}
-          >
-            {t("reset_password")}
-          </Link>
+          {t("login_staff_bad_password")} {t("login_staff_contact_owner")}
         </>
       );
     }

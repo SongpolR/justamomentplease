@@ -10,6 +10,7 @@ import EditIcon from "../components/icons/EditIcon.jsx";
 import CancelIcon from "../components/icons/CancelIcon.jsx";
 import { useToast } from "../components/ToastProvider.jsx";
 import LoadingSpinner from "../components/LoadingSpinner.jsx";
+import ConfirmModal from "../components/ConfirmModal";
 
 const ALLOWED_IMAGE_TYPES = ["image/png", "image/jpeg", "image/jpg"];
 const MAX_BYTES = 2 * 1024 * 1024;
@@ -60,6 +61,11 @@ export default function ShopSettings() {
   const [inviting, setInviting] = useState(false);
 
   const [staffs, setStaffs] = useState([]);
+  const [confirmStaffAction, setConfirmStaffAction] = useState(null);
+
+  const openStaffConfirm = (action, id) =>
+    setConfirmStaffAction({ action, id });
+  const closeStaffConfirm = () => setConfirmStaffAction(null);
 
   // Fetch shop + staff
   useEffect(() => {
@@ -84,7 +90,7 @@ export default function ShopSettings() {
           );
         }
 
-        if (staffRes.data) setStaffs(staffRes.data);
+        setStaffs(staffRes.data?.data?.staffs ?? []);
       } catch (err) {
         showToast({ type: "error", message: getGlobalErrorFromAxios(err, t) });
       } finally {
@@ -351,7 +357,7 @@ export default function ShopSettings() {
 
       if (data?.success) {
         if (data.message === "STAFF_ALREADY_EXISTS") {
-          showToast({ type: "success", message: t("staff_already_exists") });
+          showToast({ type: "warning", message: t("staff_already_exists") });
         } else {
           showToast({ type: "success", message: t("invite_sent") });
         }
@@ -411,7 +417,7 @@ export default function ShopSettings() {
       const data = res.data;
 
       if (data?.success) {
-        showToast({ type: "success", message: t("reset_link_sent") });
+        showToast({ type: "success", message: t("auth:reset_link_sent") });
         return;
       }
     } catch (err) {
@@ -419,8 +425,12 @@ export default function ShopSettings() {
     }
   };
 
-  const activateStaff = async (id) => {
-    if (!confirm(t("confirm_deactivate"))) return; // keeping same key as original
+  const activateStaff = async (id, opts = {}) => {
+    if (!opts.skipConfirm) {
+      openStaffConfirm("activate", id);
+      return;
+    }
+
     try {
       const res = await api.post(`/staff/${id}/activate`);
       const data = res.data;
@@ -432,15 +442,18 @@ export default function ShopSettings() {
           )
         );
         showToast({ type: "success", message: t("staff_activated") });
-        return;
       }
     } catch (err) {
       showToast({ type: "error", message: getGlobalErrorFromAxios(err, t) });
     }
   };
 
-  const deactivateStaff = async (id) => {
-    if (!confirm(t("confirm_deactivate"))) return;
+  const deactivateStaff = async (id, opts = {}) => {
+    if (!opts.skipConfirm) {
+      openStaffConfirm("deactivate", id);
+      return;
+    }
+
     try {
       const res = await api.post(`/staff/${id}/deactivate`);
       const data = res.data;
@@ -452,7 +465,6 @@ export default function ShopSettings() {
           )
         );
         showToast({ type: "warning", message: t("staff_deactivated") });
-        return;
       }
     } catch (err) {
       showToast({ type: "error", message: getGlobalErrorFromAxios(err, t) });
@@ -465,6 +477,45 @@ export default function ShopSettings() {
 
   return (
     <div className="mt-4 space-y-6 text-slate-900 dark:text-slate-100">
+      <ConfirmModal
+        open={!!confirmStaffAction}
+        title={
+          confirmStaffAction?.action === "activate"
+            ? t("confirm_activate_title") || "Activate staff?"
+            : t("confirm_deactivate_title") ||
+              t("confirm_deactivate") ||
+              "Deactivate staff?"
+        }
+        message={
+          confirmStaffAction?.action === "activate"
+            ? t("confirm_activate_message") ||
+              "This staff will be able to access orders and update statuses."
+            : t("confirm_deactivate_message") ||
+              "This staff will no longer be able to access the system."
+        }
+        cancelLabel={t("common:cancel") || "Cancel"}
+        confirmLabel={
+          confirmStaffAction?.action === "activate"
+            ? t("auth:activate") || "Activate"
+            : t("auth:deactivate") || "Deactivate"
+        }
+        variant={
+          confirmStaffAction?.action === "activate" ? "primary" : "danger"
+        }
+        onCancel={closeStaffConfirm}
+        onConfirm={async () => {
+          const ctx = confirmStaffAction; // snapshot
+          closeStaffConfirm();
+          if (!ctx) return;
+
+          if (ctx.action === "activate") {
+            await activateStaff(ctx.id, { skipConfirm: true });
+          } else {
+            await deactivateStaff(ctx.id, { skipConfirm: true });
+          }
+        }}
+      />
+
       {/* Header */}
       <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
         <div>
@@ -796,11 +847,11 @@ export default function ShopSettings() {
                         </span>
                       ) : s.is_active ? (
                         <span className="inline-flex items-center rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-medium text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-200">
-                          {t("active")}
+                          {t("common:active")}
                         </span>
                       ) : (
                         <span className="inline-flex items-center rounded-full bg-rose-50 px-2 py-0.5 text-[11px] font-medium text-rose-700 dark:bg-rose-900/40 dark:text-rose-200">
-                          {t("inactive")}
+                          {t("common:inactive")}
                         </span>
                       )}
                     </td>
@@ -825,14 +876,14 @@ export default function ShopSettings() {
                                 onClick={() => resetStaffPassword(s.email)}
                                 className="text-[11px] font-medium text-sky-600 underline underline-offset-2 hover:text-sky-500 dark:text-sky-300"
                               >
-                                {t("reset_password")}
+                                {t("auth:reset_password")}
                               </button>
 
                               <button
                                 onClick={() => deactivateStaff(s.id)}
                                 className="text-[11px] font-medium text-rose-600 underline underline-offset-2 hover:text-rose-500 dark:text-rose-300"
                               >
-                                {t("deactivate")}
+                                {t("auth:deactivate")}
                               </button>
                             </>
                           ) : (
@@ -840,7 +891,7 @@ export default function ShopSettings() {
                               onClick={() => activateStaff(s.id)}
                               className="text-[11px] font-medium text-emerald-600 underline underline-offset-2 hover:text-emerald-500 dark:text-emerald-300"
                             >
-                              {t("activate")}
+                              {t("auth:activate")}
                             </button>
                           ))}
                       </div>

@@ -30,12 +30,27 @@ export default function AuthLayout({
       }
     >
       <div className="w-full max-w-md">
-        {/* Brand row */}
-        <div className="mb-4 flex items-center gap-2 text-xs uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
-          <div className="flex h-7 w-7 items-center justify-center rounded-xl bg-slate-100 text-slate-700 ring-1 ring-slate-200 dark:bg-slate-900 dark:text-slate-200 dark:ring-slate-700/70">
-            <div className="h-2.5 w-2.5 animate-pulse rounded-full bg-emerald-400" />
+        {/* Header */}
+        <div className="mb-3 flex items-center gap-3">
+          <div className="relative h-8 w-8 shrink-0">
+            <span
+              aria-hidden="true"
+              className="animate-pulse-ring absolute inset-0 rounded-full border border-indigo-400/60 dark:border-indigo-300/50"
+            />
+            <img
+              src="/app-icon.svg"
+              alt="App Icon"
+              width={32}
+              height={32}
+              className="relative h-8 w-8 rounded-full bg-indigo-600 dark:bg-indigo-500 dark:ring-slate-700"
+            />
           </div>
-          <span>{t("app_name")}</span> · <span>{t("full_app_name")}</span>
+
+          <div className="min-w-0">
+            <h1 className="truncate text-base font-medium sm:text-lg text-slate-500 dark:text-slate-400">
+              <span>{t("app_name")}</span> — <span>{t("full_app_name")}</span>
+            </h1>
+          </div>
         </div>
 
         {/* Card */}
