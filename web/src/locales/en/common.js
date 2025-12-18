@@ -89,6 +89,8 @@ const common = {
   },
 
   timezone: "Timezone",
+  live: "Live",
+  offline: "Offline",
 };
 
 export default common;

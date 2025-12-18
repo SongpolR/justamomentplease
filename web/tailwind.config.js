@@ -1,6 +1,7 @@
 // tailwind.config.js
 module.exports = {
   content: ["./index.html", "./src/**/*.{js,jsx,ts,tsx}"],
+  darkMode: "class",
   theme: {
     extend: {
       fontFamily: {
@@ -14,9 +15,21 @@ module.exports = {
         ],
         display: ["SF Pro Display", "Inter", "system-ui", "sans-serif"],
       },
+
+      // ✅ Use your CSS variables as Tailwind colors
       colors: {
-        background: "#020617",
-        surface: "#020617",
+        app: {
+          bg: "var(--app-bg)",
+          surface: "var(--app-surface)",
+          surfaceSubtle: "var(--app-surface-subtle)",
+          borderSubtle: "var(--app-border-subtle)",
+          borderStrong: "var(--app-border-strong)",
+          text: "var(--app-text-main)",
+          muted: "var(--app-text-muted)",
+          accent: "var(--app-accent)",
+          accentSoft: "var(--app-accent-soft)",
+        },
+        // keep your palettes if you want
         primary: {
           50: "#eef2ff",
           100: "#e0e7ff",
@@ -52,6 +65,7 @@ module.exports = {
           950: "#020617",
         },
       },
+
       borderRadius: {
         xl: "1rem",
         "2xl": "1.25rem",

@@ -40,6 +40,12 @@ const customer = {
     check_code: "Please check your order link or QR code and try again.",
     help_text: "If this keeps happening, please contact the shop staff.",
   },
+  tap_to_enable_sound_title: "Enable sound alert",
+  tap_to_enable_sound_subtitle:
+    "Your browser needs one tap to allow sound. Tap anywhere or press Enable sound.",
+  enable_sound: "Enable sound",
+  continue_muted: "Continue muted",
+  sound_tips: "Tip: You can still mute/unmute later.",
 };
 
 export default customer;

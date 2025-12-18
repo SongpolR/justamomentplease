@@ -87,6 +87,8 @@ const common = {
   },
 
   timezone: "โซนเวลา",
+  live: "เชื่อมต่อ",
+  offline: "ออฟไลน์",
 };
 
 export default common;
