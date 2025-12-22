@@ -608,7 +608,7 @@ function OrderColumn({
                     <QRCodeCanvas
                       value={customerUrl}
                       size={52}
-                      className="cursor-pointer rounded bg-white dark:bg-slate-50"
+                      className="cursor-pointer rounded bg-white dark:bg-slate-50 p-1"
                       onClick={() => onShowQr && onShowQr(customerUrl)}
                     />
 
