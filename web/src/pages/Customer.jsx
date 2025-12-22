@@ -23,6 +23,7 @@ import readyAnim from "../lotties/status-ready.json";
 import doneAnim from "../lotties/status-done.json";
 
 import ThemeSwitcher from "../components/ThemeSwitcher.jsx";
+import RefreshIcon from "../components/icons/RefreshIcon.jsx";
 
 const SOCKET_URL = import.meta.env.VITE_REALTIME_URL || "http://localhost:4000";
 const SOUND_MUTED_KEY = "vp_customer_sound_muted";
@@ -216,45 +217,54 @@ export default function Customer() {
     if (stored === "true") setIsMuted(true);
   }, []);
 
-  // Fetch order + shop
-  useEffect(() => {
-    if (!publicCode) return;
+  const loadOrder = useCallback(
+    async ({ silent = false } = {}) => {
+      if (!publicCode) return;
 
-    let isMounted = true;
-
-    async function loadOrder() {
-      setLoading(true);
+      if (!silent) setLoading(true);
       setError(null);
 
       try {
         const res = await api.get(`/customer/orders/${publicCode}`);
         const data = res.data?.data ?? {};
-        if (!isMounted) return;
 
         setOrder(data.order || null);
         setShop(data.shop || data.order?.shop || null);
+        return true;
       } catch (err) {
-        if (!isMounted) return;
-
         if (err?.response?.status === 404) {
           setOrder(null);
           setError(t("errors.order_not_found"));
-          return;
+          return false;
         }
 
         setError(t("errors.failed_to_load_order"));
         showToast({ type: "error", message: getGlobalErrorFromAxios(err, t) });
+        return false;
       } finally {
-        if (isMounted) setLoading(false);
+        if (!silent) setLoading(false);
       }
-    }
+    },
+    [publicCode, t, showToast]
+  );
 
-    loadOrder();
+  useEffect(() => {
+    if (!publicCode) return;
+
+    let isMounted = true;
+
+    (async () => {
+      // call the reusable loader
+      await loadOrder();
+    })();
+
     return () => {
       isMounted = false;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [publicCode]);
+  }, [publicCode, loadOrder]);
+
+  // Manual reload
+  const reloadOrder = useCallback(() => loadOrder(), [loadOrder]);
 
   // Socket: join room
   useEffect(() => {
@@ -676,6 +686,29 @@ export default function Customer() {
           <ThemeSwitcher />
         </div>
       </main>
+      {/* Floating refresh button */}
+      <button
+        type="button"
+        onClick={reloadOrder}
+        className="
+          fixed bottom-4 right-4 z-40 flex items-center justify-center
+          rounded-full shadow-lg shadow-indigo-500/40 transition
+          focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-300
+          active:translate-y-0 active:scale-[0.97]
+      
+          /* --- Mobile (icon-only circular button) --- */
+          h-12 w-12 bg-indigo-500 hover:bg-indigo-400 sm:h-auto sm:w-auto
+      
+          /* --- Desktop (icon + text pill button) --- */
+          sm:flex sm:flex-row sm:gap-2 sm:rounded-full sm:px-4 sm:py-2 sm:text-sm sm:font-medium
+          text-white
+        "
+      >
+        <RefreshIcon size={18} className="text-white" />
+
+        {/* Text label only on sm+ */}
+        <span className="hidden sm:inline">{t("refresh") || "Refresh"}</span>
+      </button>
     </PageShell>
   );
 }
