@@ -90,19 +90,20 @@ class StaffInviteController extends Controller
             $frontend = rtrim(config('app.frontend_origin', 'http://localhost:5173'), '/');
             $acceptUrl = $frontend
                 . '/staff-setup?token=' . urlencode($token)
-                . '&email=' . urlencode($email);
+                . '&email=' . urlencode($email)
+                . '&shop_code=' . urlencode($shop->code);
 
             // Brand options for the new themed email (safe defaults if null)
             $options = [
                 'appName'     => config('app.name'),
                 'appSubtitle' => 'Virtual Pager',
-                'logoUrl'     => $shop->logo_url ? $shop->logo_url : (config('app.url') . '/app-icon.png'),
+                'logoUrl'     => $shop->logo_url ? $shop->logo_url : (config('app.url') . '/placeholder-rounded.png'),
                 'expireHours' => 72,
                 'supportEmail' => 'support@vipa.com',
                 //'footerNote'   => 'Sent by shop owner.',
             ];
 
-            Mail::to($email)->send(new StaffInviteMail($acceptUrl, $shop->name, $options));
+            Mail::to($email)->send(new StaffInviteMail($acceptUrl, $shop->name, $shop->code, $options));
 
             return response()->json([
                 'success' => true,
@@ -155,98 +156,83 @@ class StaffInviteController extends Controller
                     'required',
                     'string',
                     'min:8',
-                    'regex:/[A-Z]/',                        // at least one uppercase
-                    'regex:/[0-9]/',                        // at least one number
-                    'regex:/^[A-Za-z0-9!@#$%^&*._-]+$/',    // allowed chars
+                    'regex:/[A-Z]/',
+                    'regex:/[0-9]/',
+                    'regex:/^[A-Za-z0-9!@#$%^&*._-]+$/',
                 ],
+                'confirm_password' => 'required|string|same:password',
             ]);
 
-            $invite = DB::table('staff_invites')
-                ->where([
-                    'email' => $req->email,
-                    'token' => $req->token,
-                ])
-                ->first();
+            return DB::transaction(function () use ($req) {
+                $invite = DB::table('staff_invites')
+                    ->where(['email' => $req->email, 'token' => $req->token])
+                    ->first();
 
-            if (!$invite) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'INVITE_INVALID',
-                ], 400);
-            }
+                if (!$invite) {
+                    return response()->json(['success' => false, 'message' => 'INVITE_INVALID'], 400);
+                }
+                if ($invite->accepted_at) {
+                    return response()->json(['success' => false, 'message' => 'INVITE_USED'], 409);
+                }
+                if ($invite->expires_at && now()->greaterThan($invite->expires_at)) {
+                    return response()->json(['success' => false, 'message' => 'INVITE_EXPIRED'], 410);
+                }
 
-            if ($invite->accepted_at) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'INVITE_USED',
-                ], 409);
-            }
+                $staff = DB::table('staffs')
+                    ->where('email', $req->email)
+                    ->where('shop_id', $invite->shop_id)
+                    ->first();
 
-            if ($invite->expires_at && now()->greaterThan($invite->expires_at)) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'INVITE_EXPIRED',
-                ], 410);
-            }
+                if ($staff) {
+                    DB::table('staffs')->where('id', $staff->id)->update([
+                        'password' => Hash::make($req->password),
+                        'is_active' => true,
+                        'updated_at' => now(),
+                    ]);
+                    $staffId = $staff->id;
+                } else {
+                    $staffId = DB::table('staffs')->insertGetId([
+                        'shop_id' => $invite->shop_id,
+                        'name' => $invite->name,
+                        'email' => $invite->email,
+                        'password' => Hash::make($req->password),
+                        'is_active' => true,
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ]);
+                }
 
-            // Create or update staff record
-            // NOTE: use "staffs" to be consistent with other code
-            $staff = DB::table('staffs')->where('email', $req->email)->first();
-
-            if ($staff) {
-                DB::table('staffs')->where('id', $staff->id)->update([
-                    'password'   => Hash::make($req->password),
-                    'is_active'  => true,
+                DB::table('staff_invites')->where('id', $invite->id)->update([
+                    'accepted_at' => now(),
                     'updated_at' => now(),
                 ]);
-            } else {
-                DB::table('staffs')->insert([
-                    'shop_id'    => $invite->shop_id,
-                    'name'       => $invite->name,
-                    'email'      => $invite->email,
-                    'password'   => Hash::make($req->password),
-                    'is_active'  => true,
+
+                $token = Str::random(64);
+                DB::table('staff_api_tokens')->insert([
+                    'shop_id' => $invite->shop_id,
+                    'staff_id' => $staffId, // ✅ always valid
+                    'token' => $token,
                     'created_at' => now(),
                     'updated_at' => now(),
                 ]);
 
-                $staff = DB::table('staffs')->where('email', $req->email)->first();
-            }
-
-            // Mark invite as used
-            DB::table('staff_invites')->where('id', $invite->id)->update([
-                'accepted_at' => now(),
-                'updated_at'  => now(),
-            ]);
-
-            // Auto-login: issue API token
-            $token = Str::random(64);
-            DB::table('staff_api_tokens')->insert([
-                'staff_id'   => 1,
-                'token'      => $token,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]);
-
-            return response()->json([
-                'success' => true,
-                'message' => 'STAFF_SETUP_SUCCESS',
-                'data'    => [
-                    'token' => $token,
-                ],
-            ], 200);
+                return response()->json([
+                    'success' => true,
+                    'message' => 'STAFF_SETUP_SUCCESS',
+                    'data' => ['token' => $token],
+                ], 200);
+            });
         } catch (ValidationException $e) {
-            // Map Laravel validation rules → numeric error codes in config/errorcodes.php
+            // Map Laravel validation rules → numeric error codes
             $map = [
                 'REQUIRED' => config('errorcodes.REQUIRED_FIELD'),
                 'EMAIL'    => config('errorcodes.INVALID_EMAIL'),
                 'STRING'   => config('errorcodes.INVALID_FORMAT'),
-                'MIN'      => config('errorcodes.TOO_SHORT'),
-                'REGEX'    => config('errorcodes.INVALID_FORMAT'),
+                'MAX'      => config('errorcodes.TOO_LONG') ?? config('errorcodes.VALIDATION_ERROR'),
             ];
 
             $errors = [];
-            $failed = $e->validator->failed(); // field => [rule => params]
+            $failed = $e->validator->failed();
 
             foreach ($failed as $field => $rules) {
                 foreach ($rules as $rule => $params) {
@@ -254,8 +240,8 @@ class StaffInviteController extends Controller
                     $code = $map[$key] ?? config('errorcodes.VALIDATION_ERROR');
 
                     $meta = [];
-                    if ($key === 'MIN' && isset($params[0])) {
-                        $meta['min'] = $params[0];
+                    if ($key === 'MAX' && isset($params[0])) {
+                        $meta['max'] = $params[0];
                     }
 
                     $errors[$field][] = [
@@ -299,19 +285,19 @@ class StaffInviteController extends Controller
 
         $shop = DB::table('shops')->where('id', $invite->shop_id)->first();
         $frontend = config('app.frontend_origin', 'http://localhost:5173');
-        $acceptUrl = $frontend . '/staff-setup?token=' . urlencode($token) . '&email=' . urlencode($email);
+        $acceptUrl = $frontend . '/staff-setup?token=' . urlencode($token) . '&email=' . urlencode($email) . '&shop_code=' . urlencode($shop->code);
 
         // Brand options for the new themed email (safe defaults if null)
         $options = [
             'appName'     => config('app.name'),
             'appSubtitle' => 'Virtual Pager',
-            'logoUrl'     => $shop->logo_url ? $shop->logo_url : (config('app.url') . '/app-icon.png'),
+            'logoUrl'     => $shop->logo_url ? $shop->logo_url : (config('app.url') . '/placeholder-rounded.png'),
             'expireHours' => 72,
             'supportEmail' => 'support@vipa.com',
             //'footerNote'   => 'Sent by shop owner.',
         ];
 
-        Mail::to($email)->send(new StaffInviteMail($acceptUrl, $shop->name, $options));
+        Mail::to($email)->send(new StaffInviteMail($acceptUrl, $shop->name, $shop->code, $options));
 
         return response()->json(['success' => true, 'message' => 'OK'], 200);
     }

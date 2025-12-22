@@ -17,7 +17,11 @@ export default function Login() {
   const { t } = useTranslation("auth");
   const [mode, setMode] = useState("owner"); // 'owner' | 'staff'
   const [fieldErrors, setFieldErrors] = useState({});
-  const [form, setForm] = useState({ email: "", password: "" });
+  const [form, setForm] = useState({
+    email: "",
+    password: "",
+    shop_code: "",
+  });
   const [errBlock, setErrBlock] = useState(null);
   const { showToast } = useToast();
   const navigate = useNavigate();
@@ -27,10 +31,12 @@ export default function Login() {
   // Preselect mode & email via URL params
   useEffect(() => {
     const p = new URLSearchParams(location.search);
-    const m = p.get("mode");
-    const e = p.get("email");
-    if (m === "staff" || m === "owner") setMode(m);
-    if (e) setForm((prev) => ({ ...prev, email: e }));
+    const mode = p.get("mode");
+    const email = p.get("email");
+    const shopCode = p.get("shop_code");
+    if (mode === "staff" || mode === "owner") setMode(mode);
+    if (email) setForm((prev) => ({ ...prev, email: email }));
+    if (shopCode) setForm((prev) => ({ ...prev, shop_code: shopCode }));
   }, []);
 
   // Google login result handler
@@ -79,12 +85,17 @@ export default function Login() {
     setFieldErrors({});
     setErrBlock(null);
 
-    const email = form.email.trim();
-    const password = form.password;
-    const endpoint = isOwner ? "/auth/login" : "/staff/login";
-
     try {
-      const res = await api.post(endpoint, { email, password });
+      const res = isOwner
+        ? await api.post("/auth/login", {
+            email: form.email.trim(),
+            password: form.password,
+          })
+        : await api.post("/staff/login", {
+            email: form.email.trim(),
+            password: form.password,
+            shop_code: form.shop_code.trim(),
+          });
       const data = res.data;
 
       if (data?.success) {
@@ -117,7 +128,7 @@ export default function Login() {
 
       if (data?.message) {
         const messageCode = data.message;
-        setErrBlock({ code: messageCode, email, mode });
+        setErrBlock({ code: messageCode, mode });
         return;
       }
 
@@ -130,7 +141,7 @@ export default function Login() {
     <div className="inline-flex rounded-full border border-slate-200 bg-slate-50 p-1 text-[11px] font-medium text-slate-600 shadow-sm dark:border-slate-700/60 dark:bg-slate-900/80 dark:text-slate-300">
       <button
         type="button"
-        onClick={() => setMode("owner")}
+        onClick={() => toggleMode("owner")}
         className={[
           "flex items-center gap-1 rounded-full px-3 py-1 transition-all",
           isOwner
@@ -143,7 +154,7 @@ export default function Login() {
       </button>
       <button
         type="button"
-        onClick={() => setMode("staff")}
+        onClick={() => toggleMode("staff")}
         className={[
           "flex items-center gap-1 rounded-full px-3 py-1 transition-all",
           !isOwner
@@ -156,6 +167,13 @@ export default function Login() {
       </button>
     </div>
   );
+
+  const toggleMode = (mode) => {
+    setMode(mode);
+    setForm({ email: "", password: "", shop_code: "" });
+    setFieldErrors({});
+    setErrBlock(null);
+  };
 
   const subtitle = isOwner
     ? t("login_sub_owner") || "Sign in as shop owner"
@@ -220,6 +238,42 @@ export default function Login() {
           <div className="mt-1 text-xs text-red-500 dark:text-red-400">
             {fieldErrors.password}
           </div>
+        )}
+
+        {/* Shop Code */}
+        {mode === "staff" && (
+          <>
+            <label className="mt-4 block text-xs font-medium text-slate-700 dark:text-slate-300">
+              {t("common:shop_code")}
+            </label>
+            <input
+              name="shop_code"
+              type="text"
+              required
+              value={form.shop_code}
+              onChange={(e) => updateField("shop_code", e.target.value)}
+              className={[
+                "mt-1 w-full rounded-lg border p-2.5 text-sm",
+                "bg-white text-slate-900 placeholder:text-slate-400",
+                "focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-1 focus:ring-offset-slate-100",
+                "dark:bg-slate-900/80 dark:text-slate-100 dark:placeholder:text-slate-500",
+                "dark:focus:ring-offset-slate-900",
+                fieldErrors.shop_code
+                  ? "border-red-500 focus:ring-red-500"
+                  : "border-slate-300 dark:border-slate-700",
+              ].join(" ")}
+              placeholder="MYSHOP-123456"
+            />
+            <p className="mt-1 text-[11px] text-slate-500 dark:text-slate-400">
+              {t("shop_code_login_hint") ||
+                "This code is used for staff login. You can share it with your staff."}
+            </p>
+            {fieldErrors.shop_code && (
+              <div className="mt-1 text-xs text-red-500 dark:text-red-400">
+                {fieldErrors.shop_code}
+              </div>
+            )}
+          </>
         )}
 
         {/* Submit */}
@@ -356,10 +410,10 @@ function LoginErrorPanel({ code, email, mode, t }) {
     }
     return wrap(
       <>
-        {t("errors.9000")} {t("login_staff_contact_owner")}
+        {t("common:errors.9000")} {t("login_staff_contact_owner")}
       </>
     );
   }
 
-  return wrap(t("errors.9000"));
+  return wrap(t("common:errors.9000"));
 }

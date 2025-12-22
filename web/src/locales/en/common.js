@@ -91,6 +91,9 @@ const common = {
   timezone: "Timezone",
   live: "Live",
   offline: "Offline",
+  remove: "Remove",
+  copy: "Copy",
+  shop_code: "Shop code",
 };
 
 export default common;

@@ -10,6 +10,7 @@ import {
 import { useNavigate, Link } from "react-router-dom";
 import { useToast } from "../components/ToastProvider.jsx";
 import AuthLayout from "../components/layout/AuthLayout.jsx";
+import CopyIcon from "../components/icons/CopyIcon.jsx";
 
 const pwOk = (pw) => ({
   length: pw.length >= 8,
@@ -26,6 +27,7 @@ export default function StaffSetup() {
   const params = new URLSearchParams(location.search);
   const tokenParam = params.get("token") || "";
   const email = params.get("email") || "";
+  const shopCode = params.get("shop_code") || "";
 
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
@@ -128,6 +130,7 @@ export default function StaffSetup() {
         email,
         token: tokenParam,
         password,
+        confirm_password: confirm,
       });
 
       const data = res.data;
@@ -141,10 +144,12 @@ export default function StaffSetup() {
 
         showToast({
           type: "success",
-          message: t("staff_setup_success") || "Account activated.",
+          message: t("staff_setup_success") || "Staff account activated.",
         });
 
-        navigate("/", { replace: true });
+        navigate(`/login?mode=staff&email=${email}&shop_code=${shopCode}`, {
+          replace: true,
+        });
         return;
       }
 
@@ -188,6 +193,37 @@ export default function StaffSetup() {
     t("staff_setup_subtitle") ||
     "Set your password to activate your staff account";
 
+  const copyShopCode = async () => {
+    if (!shopCode) return;
+
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(shopCode);
+      } else {
+        // fallback
+        const ta = document.createElement("textarea");
+        ta.value = shopCode;
+        ta.style.position = "fixed";
+        ta.style.opacity = "0";
+        document.body.appendChild(ta);
+        ta.focus();
+        ta.select();
+        document.execCommand("copy");
+        document.body.removeChild(ta);
+      }
+
+      showToast({
+        type: "success",
+        message: t("shop_settings:shop_code_copied") || "Copied",
+      });
+    } catch (e) {
+      showToast({
+        type: "error",
+        message: t("shop_settings:shop_code_copy_failed") || "Copy failed",
+      });
+    }
+  };
+
   return (
     <AuthLayout title={t("staff_setup_title")} subtitle={subtitle}>
       <form onSubmit={submit}>
@@ -195,9 +231,40 @@ export default function StaffSetup() {
         {email && (
           <div className="mb-3 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-700 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-200">
             <span className="text-slate-500 dark:text-slate-400">
-              {t("email") || "Email"}:
+              {t("common:email") || "Email"}:
             </span>{" "}
-            <span className="font-mono">{email}</span>
+            <span className="font-mono font-bold">{email}</span>
+          </div>
+        )}
+
+        {shopCode && (
+          <div className="mb-3 flex items-center justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-700 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-200">
+            <div>
+              <div className="min-w-0">
+                <span className="text-slate-500 dark:text-slate-400">
+                  {t("common:shop_code") || "Shop code"}:
+                </span>{" "}
+                <span className="font-mono font-bold break-all">
+                  {shopCode}
+                </span>
+              </div>
+              <div className="mt-3 text-start text-[11px] text-slate-500 dark:text-slate-400">
+                {t("shop_settings:shop_code_staff_hint") ||
+                  "This code is used for staff login."}
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={copyShopCode}
+              className="inline-flex shrink-0 items-center gap-1 rounded-full border border-slate-300 bg-white px-2.5 py-1 text-[11px] font-medium text-slate-700 shadow-sm hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-300 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
+              title={t("common:copy") || "Copy"}
+            >
+              <CopyIcon size={14} />
+              <span className="hidden sm:inline">
+                {t("common:copy") || "Copy"}
+              </span>
+            </button>
           </div>
         )}
 
@@ -306,8 +373,14 @@ export default function StaffSetup() {
           {inviteBlock === "used" && (
             <div className="mt-6">
               <Link
-                className="underline underline-offset-2 hover:text-slate-700 dark:hover:text-slate-200"
-                to="/login"
+                to={{
+                  pathname: "/login",
+                  search: `?mode=staff&email=${encodeURIComponent(
+                    email
+                  )}&shop_code=${encodeURIComponent(shopCode)}`,
+                }}
+                state={{ from: "shop_settings" }}
+                replace
               >
                 {t("common:back_to_login")}
               </Link>

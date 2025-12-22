@@ -51,19 +51,27 @@ Route::middleware(['owner', 'verified'])->group(function () {
 
   // Staff management
   Route::get('/staff',                  [StaffController::class, 'index']);
-  Route::post('/staff',                 [StaffController::class, 'create']);
-  Route::post('/staff/{staffId}/activate', [StaffController::class, 'activate']);
-  Route::post('/staff/{staffId}/deactivate', [StaffController::class, 'deactivate']);
+  // Route::post('/staff',                 [StaffController::class, 'create']);
+  Route::post('/staff/{id}/activate', [StaffController::class, 'activate']);
+  Route::post('/staff/{id}/deactivate', [StaffController::class, 'deactivate']);
+  Route::post('/staff/{id}/remove', [StaffController::class, 'remove']);
 
   // Staff invitations
   Route::post('/staff/invite',         [StaffInviteController::class, 'create']);
   Route::post('/staff/invite/resend',  [StaffInviteController::class, 'resendByOwner']);
+
+  Route::post('/auth/logout',     [AuthController::class, 'logout']);
 });
 
 Route::middleware('any')->group(function () {
   // Orders management
   Route::get('/orders',                        [OrderController::class, 'index']);
   Route::post('/orders',                       [OrderController::class, 'store']);
-  Route::post('/orders/{orderId}/ready',       [OrderController::class, 'ready']);
-  Route::post('/orders/{orderId}/done',        [OrderController::class, 'done']);
+  Route::post('/orders/{id}/ready',       [OrderController::class, 'ready']);
+  Route::post('/orders/{id}/done',        [OrderController::class, 'done']);
+});
+
+Route::middleware(['staff'])->group(function () {
+  // ✅ Staff session
+  Route::post('/staff/logout',     [StaffController::class, 'logout']);
 });

@@ -89,6 +89,9 @@ const common = {
   timezone: "โซนเวลา",
   live: "เชื่อมต่อ",
   offline: "ออฟไลน์",
+  remove: "ลบ",
+  copy: "คัดลอก",
+  shop_code: "รหัสร้านค้า",
 };
 
 export default common;

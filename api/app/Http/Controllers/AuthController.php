@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\ValidationException;
 use App\Mail\VerifyEmailMail;
 use App\Mail\ResetPasswordMail;
+use App\Models\Shop;
 
 class AuthController extends Controller
 {
@@ -70,13 +71,10 @@ class AuthController extends Controller
           $logoUrl = Storage::url($path); // needs storage:link
         }
 
-        DB::table('shops')->insert([
+        Shop::create([
           'owner_id'   => $ownerId,
-          'name'       => $req->shop_name,
-          'logo_url'   => $logoUrl,
-          'sound_key'  => 'happy-bell',
-          'created_at' => now(),
-          'updated_at' => now(),
+          'name' => $req->shop_name,
+          'logo_url' => $logoUrl,
         ]);
 
         // Build signed verification URL (valid 60 minutes)
@@ -253,7 +251,7 @@ class AuthController extends Controller
   {
     $token = $req->bearerToken();
     if ($token) DB::table('owner_api_tokens')->where('token', $token)->delete();
-    return ['ok' => true];
+    return response()->json(['success' => true, 'message' => 'OK']);
   }
 
   public function verifyEmail(Request $req)

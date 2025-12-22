@@ -17,14 +17,32 @@ export default function Dialog({
   // a11y
   ariaLabelledById,
   ariaDescribedById,
+
+  // optional style overrides
+  overlayClassName = "",
+  panelClassName = "",
 }) {
+  const [mounted, setMounted] = useState(open);
   const [visible, setVisible] = useState(false);
   const panelRef = useRef(null);
 
+  // Mount/unmount with enter/exit animation
+  useEffect(() => {
+    if (open) {
+      setMounted(true);
+      const t = setTimeout(() => setVisible(true), 10);
+      return () => clearTimeout(t);
+    }
+
+    // animate out
+    setVisible(false);
+    const t = setTimeout(() => setMounted(false), 220); // duration-200 + buffer
+    return () => clearTimeout(t);
+  }, [open]);
+
+  // ESC handler + focus
   useEffect(() => {
     if (!open) return;
-
-    setVisible(true);
 
     const onKeyDown = (e) => {
       if (e.key === "Escape" && closeOnEsc) onClose?.();
@@ -32,13 +50,15 @@ export default function Dialog({
 
     window.addEventListener("keydown", onKeyDown);
 
-    // Basic focus
-    setTimeout(() => panelRef.current?.focus(), 0);
+    const t = setTimeout(() => panelRef.current?.focus(), 0);
 
-    return () => window.removeEventListener("keydown", onKeyDown);
+    return () => {
+      clearTimeout(t);
+      window.removeEventListener("keydown", onKeyDown);
+    };
   }, [open, closeOnEsc, onClose]);
 
-  if (!open) return null;
+  if (!mounted) return null;
 
   const sizeClass =
     size === "lg" ? "max-w-2xl" : size === "md" ? "max-w-lg" : "max-w-sm";
@@ -50,9 +70,11 @@ export default function Dialog({
         "bg-black/50 backdrop-blur-sm",
         "transition-opacity duration-200",
         visible ? "opacity-100" : "opacity-0",
+        overlayClassName,
       ].join(" ")}
-      onMouseDown={() => {
-        if (closeOnBackdrop) onClose?.();
+      // ✅ close on CLICK (not mousedown) to avoid click-through
+      onClick={() => {
+        if (open && closeOnBackdrop) onClose?.();
       }}
     >
       <div
@@ -62,7 +84,9 @@ export default function Dialog({
         aria-modal="true"
         aria-labelledby={ariaLabelledById}
         aria-describedby={ariaDescribedById}
+        // stop events from closing modal when clicking inside
         onMouseDown={(e) => e.stopPropagation()}
+        onClick={(e) => e.stopPropagation()}
         className={[
           "w-full",
           sizeClass,
@@ -73,6 +97,7 @@ export default function Dialog({
           visible ? "scale-100 opacity-100" : "scale-95 opacity-0",
           "focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-300",
           "dark:bg-slate-900 dark:text-slate-100 dark:ring-slate-800",
+          panelClassName,
         ].join(" ")}
       >
         {(title || description || showCloseButton) && (

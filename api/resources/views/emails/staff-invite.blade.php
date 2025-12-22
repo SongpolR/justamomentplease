@@ -52,7 +52,6 @@
                 <img
                   src="{{ $logoUrl }}"
                   alt="{{ $appName }}"
-                  width="160"
                   height="160"
                   style="display:block; margin:0 auto;"
                 />
@@ -60,6 +59,10 @@
                 <!-- EN -->
                 <p style="margin:0 0 12px;">
                   You’ve been invited to join <strong>{{ $shopName }}</strong> as staff.
+                </p>
+
+                <p style="margin:0 0 12px;">
+                  Shop code <strong>{{ $shopCode }}</strong>
                 </p>
 
                 <p style="margin:0 0 20px;">
@@ -96,6 +99,10 @@
                 <!-- TH -->
                 <p style="margin:0 0 12px;">
                   คุณได้รับคำเชิญให้เข้าร่วมร้าน <strong>{{ $shopName }}</strong> ในฐานะพนักงาน
+                </p>
+
+                <p style="margin:0 0 12px;">
+                  รหัสร้านค้า <strong>{{ $shopCode }}</strong>
                 </p>
 
                 <p style="margin:0 0 20px;">

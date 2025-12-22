@@ -22,28 +22,19 @@ class StaffController extends Controller
             ], 401);
         }
 
-        $shop = DB::table('shops')->where('id', $shopId)->first();
-        if (!$shop) {
-            // If shop is missing, return empty list but keep response shape stable
-            return response()->json([
-                'success' => true,
-                'data'    => ['staffs' => []],
-            ], 200);
-        }
-
         // Existing staff for this shop
         $staffs = DB::table('staffs')
-            ->where('shop_id', $shop->id)
+            ->where('shop_id', $shopId)
             ->orderBy('created_at', 'asc')
             ->get(['id', 'name', 'email', 'is_active', 'created_at']);
 
         // Pending invites (not accepted + not expired)
         $invites = DB::table('staff_invites')
-            ->where('shop_id', $shop->id)
+            ->where('shop_id', $shopId)
             ->whereNull('accepted_at')
             ->where('expires_at', '>', now())
             ->orderBy('created_at', 'asc')
-            ->get(['name', 'email', 'created_at', 'expires_at']);
+            ->get(['id', 'name', 'email', 'created_at', 'expires_at']);
 
         $existingEmails = $staffs
             ->pluck('email')
@@ -58,6 +49,7 @@ class StaffController extends Controller
         foreach ($staffs as $s) {
             $rows[] = [
                 'id'         => (int) $s->id,
+                'uid'        => "staff:{$s->id}",
                 'name'       => $s->name,
                 'email'      => $s->email,
                 'is_active'  => (bool) $s->is_active,
@@ -75,6 +67,7 @@ class StaffController extends Controller
 
             $rows[] = [
                 'id'         => null,
+                'uid'        => "invite:{$inv->id}",
                 'name'       => $inv->name,
                 'email'      => $inv->email,
                 'is_active'  => false,
@@ -108,6 +101,7 @@ class StaffController extends Controller
                     'regex:/[0-9]/',          // at least one number
                     'regex:/^[A-Za-z0-9!@#$%^&*._-]+$/', // allowed chars
                 ],
+                'confirm_password' => 'required|string|same:password',
             ]);
         } catch (ValidationException $e) {
             // Keep it simple: return generic validation error code
@@ -117,17 +111,18 @@ class StaffController extends Controller
             ], 422);
         }
 
-        $shop = DB::table('shops')->first();
-        if (!$shop) {
+        $shopId = $req->attributes->get('shop_id');
+        if (!$shopId) {
             return response()->json([
-                'message' => 'No shop found',
-                'errors'  => [config('errorcodes.UNKNOWN')],
-            ], 400);
+                'success' => false,
+                'message' => 'UNAUTHORIZED',
+                'errors'  => [config('errorcodes.UNAUTHORIZED')],
+            ], 401);
         }
 
         // Create staff
         $id = DB::table('staffs')->insertGetId([
-            'shop_id'    => $shop->id,
+            'shop_id'    => $shopId,
             'name'       => $req->input('name'),
             'email'      => $req->input('email'),
             'password'   => Hash::make($req->input('password')),
@@ -136,17 +131,30 @@ class StaffController extends Controller
             'updated_at' => now(),
         ]);
 
-        return response()->json(['id' => $id], 201);
+        return response()->json([
+            'success' => true,
+            'data'    => ['id' => $id],
+        ], 201);
     }
 
     /**
      * Activate a staff account (unlock).
      * Owner-only (protect via middleware: ['owner','verified'])
      */
-    public function activate($id)
+    public function activate(Request $req, $id)
     {
+        $shopId = $req->attributes->get('shop_id');
+        if (!$shopId) {
+            return response()->json([
+                'success' => false,
+                'message' => 'UNAUTHORIZED',
+                'errors'  => [config('errorcodes.UNAUTHORIZED')],
+            ], 401);
+        }
+
         $affected = DB::table('staffs')
             ->where('id', $id)
+            ->where('shop_id', $shopId)
             ->update([
                 'is_active'  => true,
                 'updated_at' => now(),
@@ -166,16 +174,58 @@ class StaffController extends Controller
      * Deactivate a staff account (soft lock).
      * Owner-only (protect via middleware: ['owner','verified'])
      */
-    public function deactivate($id)
+    public function deactivate(Request $req, $id)
     {
+        $shopId = $req->attributes->get('shop_id');
+        if (!$shopId) {
+            return response()->json([
+                'success' => false,
+                'message' => 'UNAUTHORIZED',
+                'errors'  => [config('errorcodes.UNAUTHORIZED')],
+            ], 401);
+        }
+
         $affected = DB::table('staffs')
             ->where('id', $id)
+            ->where('shop_id', $shopId)
             ->update([
                 'is_active'  => false,
                 'updated_at' => now(),
             ]);
 
         if (!$affected) {
+            return response()->json([
+                'message' => 'ACCOUNT_NOT_FOUND',
+                'errors'  => [config('errorcodes.ACCOUNT_NOT_FOUND')],
+            ], 404);
+        }
+
+        return response()->json(['success' => true, 'message' => 'OK']);
+    }
+
+    /**
+     * Remove a staff account from shop, both inviting and actual staff.
+     * Owner-only (protect via middleware: ['owner','verified'])
+     */
+    public function remove(Request $req, $id)
+    {
+        $shopId = $req->attributes->get('shop_id');
+        if (!$shopId) {
+            return response()->json([
+                'success' => false,
+                'message' => 'UNAUTHORIZED',
+                'errors'  => [config('errorcodes.UNAUTHORIZED')],
+            ], 401);
+        }
+
+        $removedStaff = DB::table('staffs')->where('shop_id', $shopId)->delete($id);
+        $removedInviting = DB::table('staff_invites')->where('shop_id', $shopId)->delete($id);
+
+        logger($id);
+        logger($shopId);
+        logger($removedStaff);
+        logger($removedInviting);
+        if (!$removedStaff && !$removedInviting) {
             return response()->json([
                 'message' => 'ACCOUNT_NOT_FOUND',
                 'errors'  => [config('errorcodes.ACCOUNT_NOT_FOUND')],
@@ -195,11 +245,27 @@ class StaffController extends Controller
             $req->validate([
                 'email'    => 'required|email',
                 'password' => 'required|string',
+                'shop_code' => 'required|string',
             ]);
 
+            $shop = DB::table('shops')
+                ->where('code', $req->shop_code)
+                ->first();
+
+            if (!$shop) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'SHOP_NOT_FOUND',
+                ], 404);
+            }
+
             $email  = $req->email;
-            $staff  = DB::table('staffs')->where('email', $email)->first();
+            $staff  = DB::table('staffs')
+                ->where('shop_id', $shop->id)
+                ->where('email', $email)
+                ->first();
             $invite = DB::table('staff_invites')
+                ->where('shop_id', $shop->id)
                 ->where('email', $email)
                 ->whereNull('accepted_at')
                 ->first();
@@ -238,6 +304,7 @@ class StaffController extends Controller
             // OK → issue staff token
             $token = Str::random(64);
             DB::table('staff_api_tokens')->insert([
+                'shop_id' => $shop->id,
                 'staff_id'   => $staff->id,
                 'token'      => $token,
                 'created_at' => now(),
@@ -290,5 +357,12 @@ class StaffController extends Controller
                 'errors'  => $errors,
             ], 422);
         }
+    }
+
+    public function logout(Request $req)
+    {
+        $token = $req->bearerToken();
+        if ($token) DB::table('staff_api_tokens')->where('token', $token)->delete();
+        return response()->json(['success' => true, 'message' => 'OK']);
     }
 }

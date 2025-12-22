@@ -12,6 +12,7 @@ class StaffInviteMail extends Mailable
 
   public string $acceptUrl;
   public string $shopName;
+  public string $shopCode;
 
   // Optional / themed variables
   public string $appName;
@@ -27,10 +28,12 @@ class StaffInviteMail extends Mailable
   public function __construct(
     string $acceptUrl,
     string $shopName,
+    string $shopCode,
     array $options = []
   ) {
     $this->acceptUrl = $acceptUrl;
     $this->shopName  = $shopName;
+    $this->shopCode  = $shopCode;
 
     // Defaults (safe for all environments)
     $this->appName     = $options['appName']     ?? config('app.name');
@@ -52,6 +55,7 @@ class StaffInviteMail extends Mailable
       ->with([
         'acceptUrl'   => $this->acceptUrl,
         'shopName'    => $this->shopName,
+        'shopCode'    => $this->shopCode,
         'appName'     => $this->appName,
         'appSubtitle' => $this->appSubtitle,
         'logoUrl'     => $this->logoUrl,

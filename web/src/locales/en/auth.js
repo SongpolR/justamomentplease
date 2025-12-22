@@ -86,6 +86,8 @@ const auth = {
     "Set a new password to regain access to your staff account",
   staff_reset_footer_hint:
     "If this link doesn’t work, request a new reset email from the login page.",
+  staff_setup_success: "Staff account activated.",
+  shop_code_login_hint: "Ask your shop owner for the shop code to sign in.",
 };
 
 export default auth;

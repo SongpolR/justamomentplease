@@ -7,6 +7,7 @@ use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Http\Request;
 use Laravel\Socialite\Facades\Socialite;
+use App\Models\Shop;
 
 class GoogleAuthController extends Controller
 {
@@ -47,13 +48,8 @@ class GoogleAuthController extends Controller
                 'updated_at' => now(),
             ]);
 
-            DB::table('shops')->insert([
-                'owner_id' => $ownerId,
-                'name' => 'My Shop',
-                'logo_url' => null,
-                'sound_key' => 'happy-bell',
-                'created_at' => now(),
-                'updated_at' => now(),
+            Shop::create([
+                'owner_id'   => $ownerId,
             ]);
 
             $owner = DB::table('owners')->where('id', $ownerId)->first();

@@ -1,34 +1,65 @@
 // web/src/pages/AccountSettings.jsx
-import React from "react";
+import React, { useCallback, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import ConfirmModal from "../components/ConfirmModal";
 import { useToast } from "../components/ToastProvider";
+import api from "../lib/api";
 
 export default function AccountSettings() {
   const { t } = useTranslation(["account", "common"]);
   const navigate = useNavigate();
   const { showToast } = useToast();
-  const [showLogoutConfirm, setShowLogoutConfirm] = React.useState(false);
+
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const [loggingOut, setLoggingOut] = useState(false);
 
   const role = localStorage.getItem("tokenType") || "staff"; // fallback
 
-  const logout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("tokenType");
-    navigate("/login", { replace: true });
-  };
+  const logout = useCallback(async () => {
+    if (loggingOut) return;
+
+    setLoggingOut(true);
+    try {
+      // read freshest role (avoid stale closure)
+      const currentRole = localStorage.getItem("tokenType") || "staff";
+
+      if (currentRole === "owner") {
+        await api.post("/auth/logout");
+      } else {
+        await api.post("/staff/logout");
+      }
+    } catch {
+      // ignore (best-effort logout)
+    } finally {
+      localStorage.removeItem("token");
+      localStorage.removeItem("tokenType");
+      setLoggingOut(false);
+      navigate("/login", { replace: true });
+    }
+  }, [navigate, loggingOut]);
 
   return (
     <div className="mt-4 space-y-4 text-slate-900 dark:text-slate-100">
       {/* Logout Confirmation Modal */}
       <ConfirmModal
         open={showLogoutConfirm}
-        title={t("common:logout_confirm_title")}
-        message={t("common:logout_confirm_message")}
-        cancelLabel={t("common:cancel")}
-        confirmLabel={t("common:logout")}
-        onCancel={() => setShowLogoutConfirm(false)}
+        variant="error"
+        title={t("common:logout_confirm_title") || "Log out?"}
+        message={
+          t("common:logout_confirm_message") ||
+          "You will be signed out from this device."
+        }
+        cancelLabel={t("common:cancel") || "Cancel"}
+        confirmLabel={
+          loggingOut
+            ? t("common:logging_out") || "Logging out..."
+            : t("common:logout") || "Logout"
+        }
+        onCancel={() => {
+          if (loggingOut) return;
+          setShowLogoutConfirm(false);
+        }}
         onConfirm={() => {
           setShowLogoutConfirm(false);
           logout();
@@ -104,10 +135,17 @@ export default function AccountSettings() {
 
             <button
               type="button"
-              className="inline-flex items-center justify-center rounded-full border border-red-500/30 bg-red-500 px-4 py-2 text-sm font-semibold text-white shadow-md shadow-red-500/25 transition hover:-translate-y-[1px] hover:bg-red-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-300 active:translate-y-0 active:scale-[0.99]"
+              disabled={loggingOut}
+              className={[
+                "inline-flex items-center justify-center rounded-full px-4 py-2 text-sm font-semibold text-white shadow-md transition",
+                "bg-red-500 hover:-translate-y-[1px] hover:bg-red-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-300 active:translate-y-0 active:scale-[0.99]",
+                "disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0",
+              ].join(" ")}
               onClick={() => setShowLogoutConfirm(true)}
             >
-              {t("common:logout")}
+              {loggingOut
+                ? t("common:logging_out") || "Logging out..."
+                : t("common:logout") || "Logout"}
             </button>
           </div>
         </div>

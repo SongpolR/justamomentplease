@@ -1,5 +1,10 @@
 const shop_settings = {
   shop_settings_title: "Shop Settings",
+  shop_code_hint:
+    "This code is used for staff login. You can share it with your staff.",
+  shop_code_copied: "Shop code copied.",
+  shop_code_copy_failed: "Shop code copy failed.",
+  shop_code_staff_hint: "This code is used for staff login.",
   shop_name: "Shop Name",
   shop_logo: "Shop Logo",
   shop_sound_key: "Notify Sound",
@@ -20,6 +25,8 @@ const shop_settings = {
   confirm_activate: "Are you sure you want to activate this staff?",
   staff_deactivated: "Staff deactivated successfully.",
   confirm_deactivate: "Are you sure you want to deactivate this staff?",
+  staff_removed: "Staff removed successfully.",
+  confirm_remove: "Are you sure you want to remove this staff?",
   no_staff: "No staff members found.",
   staff_status_invited: "Invited (pending)",
   staff_already_exists: "This staff already exists in your shop.",
@@ -54,6 +61,9 @@ const shop_settings = {
   confirm_deactivate_title: "Deactivate staff?",
   confirm_deactivate_message:
     "This staff will no longer be able to access the system.",
+  confirm_remove_title: "Remove staff?",
+  confirm_remove_message:
+    "This will remove this staff from your shop. They will no longer have access.",
 };
 
 export default shop_settings;

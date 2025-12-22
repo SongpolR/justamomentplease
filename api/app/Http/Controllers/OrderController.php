@@ -166,28 +166,36 @@ class OrderController extends Controller
     /**
      * Mark order as READY.
      */
-    public function ready(Request $req, $orderId)
+    public function ready(Request $req, $id)
     {
-        return $this->changeStatus($req, $orderId, 'ready');
+        return $this->changeStatus($req, $id, 'ready');
     }
 
     /**
      * Mark order as DONE.
      */
-    public function done(Request $req, $orderId)
+    public function done(Request $req, $id)
     {
-        return $this->changeStatus($req, $orderId, 'done');
+        return $this->changeStatus($req, $id, 'done');
     }
 
     // ----------------- Helpers -----------------
 
-    protected function changeStatus(Request $req, $orderId, string $toStatus)
+    protected function changeStatus(Request $req, $id, string $toStatus)
     {
         $shopId = $req->attributes->get('shop_id');
+        if (!$shopId) {
+            return response()->json([
+                'success' => false,
+                'message' => 'UNAUTHORIZED',
+                'errors'  => [config('errorcodes.UNAUTHORIZED')],
+            ], 401);
+        }
+
         $now    = now();
 
         $order = Order::where('shop_id', $shopId)
-            ->where('id', $orderId)
+            ->where('id', $id)
             ->first();
 
         if (!$order) {

@@ -1,5 +1,5 @@
 // web/src/pages/ShopSettings.jsx
-import React, { useEffect, useState, useRef } from "react";
+import React, { useCallback, useEffect, useState, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import api from "../lib/api";
 import {
@@ -11,6 +11,7 @@ import CancelIcon from "../components/icons/CancelIcon.jsx";
 import { useToast } from "../components/ToastProvider.jsx";
 import LoadingSpinner from "../components/LoadingSpinner.jsx";
 import ConfirmModal from "../components/ConfirmModal";
+import CopyIcon from "../components/icons/CopyIcon.jsx";
 
 const ALLOWED_IMAGE_TYPES = ["image/png", "image/jpeg", "image/jpg"];
 const MAX_BYTES = 2 * 1024 * 1024;
@@ -63,34 +64,56 @@ export default function ShopSettings() {
   const [staffs, setStaffs] = useState([]);
   const [confirmStaffAction, setConfirmStaffAction] = useState(null);
 
-  const openStaffConfirm = (action, id) =>
-    setConfirmStaffAction({ action, id });
-  const closeStaffConfirm = () => setConfirmStaffAction(null);
+  // const openStaffConfirm = (action, id) =>
+  //   setConfirmStaffAction({ action, id });
+  // const closeStaffConfirm = () => setConfirmStaffAction(null);
 
-  // Fetch shop + staff
+  const fetchShop = useCallback(async () => {
+    const shopRes = await api.get("/shop");
+    const s = shopRes.data?.data?.shop ?? shopRes.data;
+    setShop(s);
+    setShopName(s?.name || "");
+    setLogoPreview(s?.logo_url || null);
+    setSoundKey(s?.sound_key || SOUND_KEYS[0]);
+    setTimezone(
+      s?.timezone ||
+        Intl.DateTimeFormat().resolvedOptions().timeZone ||
+        TIMEZONES[0]
+    );
+  }, []);
+
+  // replace confirmStaffAction usage with these:
+  const [confirmCtx, setConfirmCtx] = useState(null); // { action, id }
+  const [confirmOpen, setConfirmOpen] = useState(false);
+
+  const openStaffConfirm = (action, id) => {
+    setConfirmCtx({ action, id });
+    setConfirmOpen(true);
+  };
+
+  const closeStaffConfirm = () => {
+    setConfirmOpen(false);
+  };
+
+  // after closing, clear context AFTER exit animation finishes
+  useEffect(() => {
+    if (confirmOpen) return;
+    if (!confirmCtx) return;
+
+    const t = setTimeout(() => setConfirmCtx(null), 220); // must match Dialog duration
+    return () => clearTimeout(t);
+  }, [confirmOpen, confirmCtx]);
+
+  const fetchStaffs = useCallback(async () => {
+    const staffRes = await api.get("/staff");
+    setStaffs(staffRes.data?.data?.staffs ?? []);
+  }, []);
+
+  // Initial load
   useEffect(() => {
     const fetchAll = async () => {
       try {
-        const [shopRes, staffRes] = await Promise.all([
-          api.get("/shop"),
-          api.get("/staff"),
-        ]);
-
-        if (shopRes.data) {
-          // robust: support both wrapped and plain shop responses
-          const s = shopRes.data.data?.shop ?? shopRes.data;
-          setShop(s);
-          setShopName(s.name || "");
-          setLogoPreview(s.logo_url || null);
-          setSoundKey(s.sound_key || SOUND_KEYS[0]);
-          setTimezone(
-            s.timezone ||
-              Intl.DateTimeFormat().resolvedOptions().timeZone ||
-              TIMEZONES[0]
-          );
-        }
-
-        setStaffs(staffRes.data?.data?.staffs ?? []);
+        await Promise.all([fetchShop(), fetchStaffs()]);
       } catch (err) {
         showToast({ type: "error", message: getGlobalErrorFromAxios(err, t) });
       } finally {
@@ -98,7 +121,7 @@ export default function ShopSettings() {
       }
     };
     fetchAll();
-  }, [showToast, t]);
+  }, [fetchShop, fetchStaffs, showToast, t]);
 
   const updateShopName = (value) => {
     setShopName(value);
@@ -393,6 +416,7 @@ export default function ShopSettings() {
         showToast({ type: "error", message: getGlobalErrorFromAxios(err, t) });
       }
     } finally {
+      await fetchStaffs();
       setInviting(false);
     }
   };
@@ -432,7 +456,7 @@ export default function ShopSettings() {
     }
 
     try {
-      const res = await api.post(`/staff/${id}/activate`);
+      const res = await api.post(`/staff/${staffId}/activate`);
       const data = res.data;
 
       if (data?.success) {
@@ -454,8 +478,10 @@ export default function ShopSettings() {
       return;
     }
 
+    const staffId = id.replace("staff:", "");
+
     try {
-      const res = await api.post(`/staff/${id}/deactivate`);
+      const res = await api.post(`/staff/${staffId}/deactivate`);
       const data = res.data;
 
       if (data?.success) {
@@ -471,6 +497,64 @@ export default function ShopSettings() {
     }
   };
 
+  const removeStaff = async (id, opts = {}) => {
+    if (!opts.skipConfirm) {
+      openStaffConfirm("remove", id);
+      return;
+    }
+
+    const staffId = id.replace("staff:", "").replace("invite:", "");
+
+    try {
+      const res = await api.post(`/staff/${staffId}/remove`);
+      const data = res.data;
+
+      if (data?.success) {
+        setStaffs((prev) =>
+          prev.map((s) =>
+            s.kind === "staff" && s.id === id ? { ...s, is_active: 0 } : s
+          )
+        );
+        showToast({ type: "error", message: t("staff_removed") });
+      }
+    } catch (err) {
+      showToast({ type: "error", message: getGlobalErrorFromAxios(err, t) });
+    } finally {
+      await fetchStaffs();
+    }
+  };
+
+  const copyShopCode = async () => {
+    if (!shop.code) return;
+
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(shop.code);
+      } else {
+        // fallback
+        const ta = document.createElement("textarea");
+        ta.value = shop.code;
+        ta.style.position = "fixed";
+        ta.style.opacity = "0";
+        document.body.appendChild(ta);
+        ta.focus();
+        ta.select();
+        document.execCommand("copy");
+        document.body.removeChild(ta);
+      }
+
+      showToast({
+        type: "success",
+        message: t("shop_code_copied") || "Copied",
+      });
+    } catch (e) {
+      showToast({
+        type: "error",
+        message: t("shop_code_copy_failed") || "Copy failed",
+      });
+    }
+  };
+
   if (loading) {
     return <LoadingSpinner fullscreen={true} label={t("loading")} />;
   }
@@ -478,41 +562,50 @@ export default function ShopSettings() {
   return (
     <div className="mt-4 space-y-6 text-slate-900 dark:text-slate-100">
       <ConfirmModal
-        open={!!confirmStaffAction}
+        open={confirmOpen}
         title={
-          confirmStaffAction?.action === "activate"
+          confirmCtx?.action === "activate"
             ? t("confirm_activate_title") || "Activate staff?"
-            : t("confirm_deactivate_title") ||
-              t("confirm_deactivate") ||
-              "Deactivate staff?"
+            : confirmCtx?.action === "deactivate"
+            ? t("confirm_deactivate_title") || "Deactivate staff?"
+            : t("confirm_remove_title") || "Remove staff?"
         }
         message={
-          confirmStaffAction?.action === "activate"
+          confirmCtx?.action === "activate"
             ? t("confirm_activate_message") ||
               "This staff will be able to access orders and update statuses."
-            : t("confirm_deactivate_message") ||
+            : confirmCtx?.action === "deactivate"
+            ? t("confirm_deactivate_message") ||
               "This staff will no longer be able to access the system."
+            : t("confirm_remove_message") ||
+              "This staff will be removed from this shop."
         }
         cancelLabel={t("common:cancel") || "Cancel"}
         confirmLabel={
-          confirmStaffAction?.action === "activate"
+          confirmCtx?.action === "activate"
             ? t("auth:activate") || "Activate"
-            : t("auth:deactivate") || "Deactivate"
+            : confirmCtx?.action === "deactivate"
+            ? t("auth:deactivate") || "Deactivate"
+            : t("common:remove") || "Remove"
         }
         variant={
-          confirmStaffAction?.action === "activate" ? "primary" : "danger"
+          confirmCtx?.action === "activate"
+            ? "info"
+            : confirmCtx?.action === "deactivate"
+            ? "warning"
+            : "error"
         }
         onCancel={closeStaffConfirm}
         onConfirm={async () => {
-          const ctx = confirmStaffAction; // snapshot
+          const ctx = confirmCtx; // snapshot
           closeStaffConfirm();
           if (!ctx) return;
 
-          if (ctx.action === "activate") {
+          if (ctx.action === "activate")
             await activateStaff(ctx.id, { skipConfirm: true });
-          } else {
+          else if (ctx.action === "deactivate")
             await deactivateStaff(ctx.id, { skipConfirm: true });
-          }
+          else await removeStaff(ctx.id, { skipConfirm: true });
         }}
       />
 
@@ -538,6 +631,34 @@ export default function ShopSettings() {
           </div>
 
           <div className="space-y-4 px-4 pb-4 pt-3">
+            <div>
+              <label className="mb-1 block text-[11px] font-medium text-slate-600 dark:text-slate-300">
+                {t("common:shop_code")}
+              </label>
+              <div className="flex items-center justify-between gap-3 p-3 rounded-lg border border-slate-200 bg-slate-50 text-xs text-slate-700 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-200">
+                <div className="rounded-xl bg-slate-50 text-slate-700 dark:bg-slate-900/60 dark:text-slate-200 dark:ring-slate-800">
+                  <div className="mt-0.5 text-sm font-semibold text-slate-900 dark:text-slate-50">
+                    {shop.code}
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={copyShopCode}
+                  className="inline-flex shrink-0 items-center gap-1 rounded-full border border-slate-300 bg-white px-2.5 py-1 text-[11px] font-medium text-slate-700 shadow-sm hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-300 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
+                  title={t("common:copy") || "Copy"}
+                >
+                  <CopyIcon size={14} />
+                  <span className="hidden sm:inline">
+                    {t("common:copy") || "Copy"}
+                  </span>
+                </button>
+              </div>
+              <p className="mt-1 text-[11px] text-slate-500 dark:text-slate-400">
+                {t("shop_code_hint") ||
+                  "This code is used for staff login. You can share it with your staff."}
+              </p>
+            </div>
+
             {/* Shop name row */}
             <div>
               <label className="mb-1 block text-[11px] font-medium text-slate-600 dark:text-slate-300">
@@ -828,9 +949,7 @@ export default function ShopSettings() {
 
                 return (
                   <tr
-                    key={`${isInvite ? "invite" : "staff"}-${
-                      s.id ?? s.email
-                    }-${idx}`}
+                    key={s.uid}
                     className="odd:bg-white even:bg-slate-50/60 hover:bg-indigo-50/40 dark:odd:bg-slate-900 dark:even:bg-slate-900/70 dark:hover:bg-slate-800"
                   >
                     <td className="border border-slate-200 px-3 py-2 text-sm dark:border-slate-700">
@@ -880,20 +999,26 @@ export default function ShopSettings() {
                               </button>
 
                               <button
-                                onClick={() => deactivateStaff(s.id)}
-                                className="text-[11px] font-medium text-rose-600 underline underline-offset-2 hover:text-rose-500 dark:text-rose-300"
+                                onClick={() => deactivateStaff(s.uid)}
+                                className="text-[11px] font-medium text-amber-600 underline underline-offset-2 hover:text-amber-500 dark:text-amber-300"
                               >
                                 {t("auth:deactivate")}
                               </button>
                             </>
                           ) : (
                             <button
-                              onClick={() => activateStaff(s.id)}
+                              onClick={() => activateStaff(s.uid)}
                               className="text-[11px] font-medium text-emerald-600 underline underline-offset-2 hover:text-emerald-500 dark:text-emerald-300"
                             >
                               {t("auth:activate")}
                             </button>
                           ))}
+                        <button
+                          onClick={() => removeStaff(s.uid)}
+                          className="text-[11px] font-medium text-rose-600 underline underline-offset-2 hover:text-rose-500 dark:text-rose-300"
+                        >
+                          {t("common:remove")}
+                        </button>
                       </div>
                     </td>
                   </tr>
