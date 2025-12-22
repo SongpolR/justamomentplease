@@ -9,9 +9,6 @@ export default function SessionExpiredModal({ open }) {
   if (!open) return null;
 
   const handleOk = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("tokenType");
-    localStorage.removeItem("user");
     window.location.href = "/login";
   };
 

@@ -30,7 +30,7 @@ api.interceptors.response.use(
     if (status === 401 && !isLoginEndpoint && !isStaffLoginEndpoint) {
       // Clear session anyway
       localStorage.removeItem("token");
-      localStorage.removeItem("user");
+      localStorage.removeItem("tokenType");
 
       // Notify React
       window.dispatchEvent(new Event("session-expired"));
