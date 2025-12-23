@@ -29,6 +29,7 @@ import {
 } from "react-router-dom";
 import HamburgerIcon from "./components/icons/HamburgerIcon.jsx";
 import CloseIcon from "./components/icons/CloseIcon.jsx";
+import ChangePassword from "./pages/ChangePassword.jsx";
 
 function TopNav({ role }) {
   const { t } = useTranslation("common");
@@ -268,6 +269,8 @@ const router = createBrowserRouter([
       </Protected>
     ),
   },
+
+  { path: "/settings/account/change-password", element: <ChangePassword /> },
 
   // 404
   { path: "*", element: <NotFound /> },

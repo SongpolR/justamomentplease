@@ -88,6 +88,13 @@ const auth = {
   staff_setup_success: "เปิดใช้งานบัญชีพนักงานสำเร็จ",
   shop_code_login_hint:
     "ขอรหัสร้าน (Shop code) จากเจ้าของร้านเพื่อใช้เข้าสู่ระบบ",
+
+  change_password_title: "เปลี่ยนรหัสผ่าน",
+  change_password_subtitle: "กรอกรหัสผ่านปัจจุบัน แล้วตั้งรหัสผ่านใหม่",
+  old_password_label: "รหัสผ่านปัจจุบัน",
+  new_password_label: "รหัสผ่านใหม่",
+  confirm_new_password_label: "ยืนยันรหัสผ่านใหม่",
+  change_password_cta: "อัปเดตรหัสผ่าน",
 };
 
 export default auth;

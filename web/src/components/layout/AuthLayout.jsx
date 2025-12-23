@@ -6,10 +6,10 @@ import LanguageSwitcher from "../LanguageSwitcher.jsx";
 import { useTranslation } from "react-i18next";
 
 /**
- * AuthLayout:
- * - Uses AppShell with glow + toolbar (Theme + Language)
- * - Shows brand row "ViPa · Virtual Pager"
- * - Renders a card with header (title + subtitle + optional right-side slot)
+ * AuthLayout
+ * - Uses AppShell with optional glow + optional toolbar (Theme + Language)
+ * - Optional app header row (icon + "ViPa · Virtual Pager")
+ * - Optional card header (title + subtitle + optional right-side slot)
  * - Children are the form content (fields, errors, buttons, footer)
  */
 export default function AuthLayout({
@@ -17,41 +17,59 @@ export default function AuthLayout({
   subtitle,
   headerRight = null, // e.g. mode toggle buttons
   children,
+
+  // ✅ new controls
+  showToolbar = true,
+  showAppHeader = true, // brand row (icon + app name)
+  showCardHeader = true, // title/subtitle row inside the card
+  withGlow = true,
+
+  // optional overrides
+  toolbar = null, // if provided, will be used instead of default (Language + Theme)
+  className = "",
+  contentClassName = "",
 }) {
   const { t } = useTranslation("");
+
+  const defaultToolbar = (
+    <>
+      <LanguageSwitcher />
+      <ThemeSwitcher />
+    </>
+  );
+
   return (
     <AppShell
-      withGlow
-      toolbar={
-        <>
-          <LanguageSwitcher />
-          <ThemeSwitcher />
-        </>
-      }
+      withGlow={withGlow}
+      toolbar={showToolbar ? toolbar ?? defaultToolbar : null}
+      className={className}
+      contentClassName={contentClassName}
     >
       <div className="w-full max-w-md">
-        {/* Header */}
-        <div className="mb-3 flex items-center gap-3">
-          <div className="relative h-8 w-8 shrink-0">
-            <span
-              aria-hidden="true"
-              className="animate-pulse-ring absolute inset-0 rounded-full border border-indigo-400/60 dark:border-indigo-300/50"
-            />
-            <img
-              src="/app-icon.svg"
-              alt="App Icon"
-              width={32}
-              height={32}
-              className="relative h-8 w-8 rounded-full bg-indigo-600 dark:bg-indigo-500 dark:ring-slate-700"
-            />
-          </div>
+        {/* App header (brand row) */}
+        {showAppHeader && (
+          <div className="mb-3 flex items-center gap-3">
+            <div className="relative h-8 w-8 shrink-0">
+              <span
+                aria-hidden="true"
+                className="animate-pulse-ring absolute inset-0 rounded-full border border-indigo-400/60 dark:border-indigo-300/50"
+              />
+              <img
+                src="/app-icon.svg"
+                alt="App Icon"
+                width={32}
+                height={32}
+                className="relative h-8 w-8 rounded-full bg-indigo-600 dark:bg-indigo-500 dark:ring-slate-700"
+              />
+            </div>
 
-          <div className="min-w-0">
-            <h1 className="truncate text-base font-medium sm:text-lg text-slate-500 dark:text-slate-400">
-              <span>{t("app_name")}</span> — <span>{t("full_app_name")}</span>
-            </h1>
+            <div className="min-w-0">
+              <h1 className="truncate text-base font-medium sm:text-lg text-slate-500 dark:text-slate-400">
+                <span>{t("app_name")}</span> — <span>{t("full_app_name")}</span>
+              </h1>
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Card */}
         <section
@@ -65,16 +83,22 @@ export default function AuthLayout({
           <div className="pointer-events-none absolute inset-x-0 -top-24 hidden h-40 bg-[radial-gradient(circle_at_top,_rgba(129,140,248,0.28),_transparent_60%)] dark:block" />
 
           <div className="relative">
-            {/* Header row */}
-            <div className="mb-5 flex items-center justify-between gap-3">
-              <div className="flex flex-col gap-1">
-                <h1 className="text-lg font-semibold sm:text-xl">{title}</h1>
-                {subtitle && (
-                  <p className="app-text-muted text-xs">{subtitle}</p>
-                )}
+            {/* Card header (title/subtitle + right slot) */}
+            {showCardHeader && (title || subtitle || headerRight) && (
+              <div className="mb-5 flex items-center justify-between gap-3">
+                <div className="flex flex-col gap-1">
+                  {title && (
+                    <h1 className="text-lg font-semibold sm:text-xl">
+                      {title}
+                    </h1>
+                  )}
+                  {subtitle && (
+                    <p className="app-text-muted text-xs">{subtitle}</p>
+                  )}
+                </div>
+                {headerRight && <div>{headerRight}</div>}
               </div>
-              {headerRight && <div>{headerRight}</div>}
-            </div>
+            )}
 
             {/* Auth content (form, errors, etc.) */}
             {children}

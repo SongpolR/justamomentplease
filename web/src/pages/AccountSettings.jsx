@@ -1,7 +1,7 @@
 // web/src/pages/AccountSettings.jsx
 import React, { useCallback, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import ConfirmModal from "../components/ConfirmModal";
 import { useToast } from "../components/ToastProvider";
 import api from "../lib/api";
@@ -118,20 +118,26 @@ export default function AccountSettings() {
 
           {/* Actions */}
           <div className="mt-4 grid gap-2 sm:grid-cols-2">
-            <button
+            {/* <Link
+              to="/orders"
+              className="group flex items-center gap-2 rounded px-1 py-1 sm:px-2 sm:py-2 light:bg-indigo-400/5"
+              onClick={closeMenu}
+            ></Link> */}
+            <Link
               type="button"
               className="inline-flex items-center justify-center rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-800 shadow-sm transition hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-300 dark:border-slate-700 dark:bg-slate-900/70 dark:text-slate-100 dark:hover:bg-slate-800"
-              onClick={() =>
-                showToast({
-                  type: "info",
-                  message:
-                    t("account:change_password_coming_soon") ||
-                    "Change password will be added soon.",
-                })
-              }
+              // onClick={() =>
+              //   showToast({
+              //     type: "info",
+              //     message:
+              //       t("account:change_password_coming_soon") ||
+              //       "Change password will be added soon.",
+              //   })
+              // }
+              to="/settings/account/change-password"
             >
               {t("account:change_password") || "Change password"}
-            </button>
+            </Link>
 
             <button
               type="button"

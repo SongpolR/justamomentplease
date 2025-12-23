@@ -89,6 +89,13 @@ const auth = {
     "If this link doesn’t work, request a new reset email from the login page.",
   staff_setup_success: "Staff account activated.",
   shop_code_login_hint: "Ask your shop owner for the shop code to sign in.",
+
+  change_password_title: "Change password",
+  change_password_subtitle: "Enter your current password, then set a new one.",
+  old_password_label: "Current password",
+  new_password_label: "New password",
+  confirm_new_password_label: "Confirm new password",
+  change_password_cta: "Update password",
 };
 
 export default auth;
