@@ -76,6 +76,7 @@ const common = {
     2006: "Authentication token missing.",
     2007: "Account not found.",
     2008: "This account is inactive.",
+    2011: "Current password is incorrect.",
     3000: "Your email is not verified.",
     3001: "Your email has already been verified.",
     3002: "Verification link is invalid.",

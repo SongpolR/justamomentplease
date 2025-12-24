@@ -16,7 +16,7 @@ class ShopController extends Controller
     if (!$ownerId) {
       return response()->json([
         'success' => false,
-        'message' => 'OWNER_NOT_AUTHENTICATED',
+        'message' => 'UNAUTHORIZED',
       ], 401);
     }
 

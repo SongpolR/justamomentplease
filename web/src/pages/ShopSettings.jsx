@@ -556,7 +556,7 @@ export default function ShopSettings() {
   };
 
   if (loading) {
-    return <LoadingSpinner fullscreen={true} label={t("loading")} />;
+    return <LoadingSpinner fullscreen={true} label={t("common:loading")} />;
   }
 
   return (

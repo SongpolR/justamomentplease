@@ -102,8 +102,9 @@ export default function ChangePassword() {
       const data = res.data;
 
       if (data?.success) {
+        localStorage.setItem("token", data.data?.token);
         showToast({ type: "success", message: t("change_password_success") });
-        navigate("/", { replace: true });
+        navigate("/settings/account", { replace: true });
         return;
       }
 

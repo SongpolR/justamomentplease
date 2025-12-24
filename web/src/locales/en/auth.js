@@ -96,6 +96,7 @@ const auth = {
   new_password_label: "New password",
   confirm_new_password_label: "Confirm new password",
   change_password_cta: "Update password",
+  change_password_success: "Password updated successfully.",
 };
 
 export default auth;

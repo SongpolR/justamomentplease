@@ -61,6 +61,7 @@ Route::middleware(['owner', 'verified'])->group(function () {
   Route::post('/staff/invite/resend',  [StaffInviteController::class, 'resendByOwner']);
 
   Route::post('/auth/logout',     [AuthController::class, 'logout']);
+  Route::post('/auth/change-password',     [AuthController::class, 'changePassword']);
 });
 
 Route::middleware('any')->group(function () {

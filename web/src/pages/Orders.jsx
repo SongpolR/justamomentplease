@@ -227,7 +227,7 @@ export default function Orders() {
       : t("order_status_done") || "Done";
 
   if (loading) {
-    return <LoadingSpinner fullscreen={true} label={t("loading")} />;
+    return <LoadingSpinner fullscreen={true} label={t("common:loading")} />;
   }
 
   return (

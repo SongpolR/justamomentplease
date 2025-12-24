@@ -488,4 +488,123 @@ class AuthController extends Controller
       ], 422);
     }
   }
+
+  public function changePassword(Request $req)
+  {
+    try {
+      $req->validate([
+        'old_password' => 'required|string',
+        'password' => [
+          'required',
+          'string',
+          'min:8',
+          'regex:/[A-Z]/',
+          'regex:/[0-9]/',
+          'regex:/^[A-Za-z0-9!@#$%^&*._-]+$/',
+        ],
+        'confirm_password' => 'required|string|same:password',
+      ]);
+
+      $ownerId = $req->attributes->get('owner_id');
+
+      if (!$ownerId) {
+        return response()->json([
+          'success' => false,
+          'message' => 'UNAUTHORIZED',
+        ], 401);
+      }
+
+      $owner = DB::table('owners')->where('id', $ownerId)->first();
+
+      if (!$owner) {
+        return response()->json([
+          'success' => false,
+          'message' => 'UNAUTHORIZED'
+        ], 401);
+      }
+
+      // ✅ Verify old password
+      if (!Hash::check($req->old_password, $owner->password)) {
+        return response()->json([
+          'success' => false,
+          'message' => 'VALIDATION_FAILED',
+          'errors'  => [
+            'old_password' => [
+              [
+                'code' => config('errorcodes.OLD_PASSWORD_INVALID'),
+                'meta' => [],
+              ],
+            ],
+          ],
+        ], 422);
+      }
+
+      // ✅ Update password
+      DB::table('owners')->where('id', $owner->id)->update([
+        'password' => Hash::make($req->password),
+        'updated_at' => now(),
+      ]);
+
+      // Invalidate all old tokens
+      DB::table('owner_api_tokens')
+        ->where('owner_id', $owner->id)
+        ->delete();
+
+      // Create and store new token (store only hash)
+      $newToken = Str::random(64);
+
+      DB::table('owner_api_tokens')->insert([
+        'owner_id'     => $owner->id,
+        'token'  => $newToken,
+        'created_at'  => now(),
+        'updated_at'  => now(),
+      ]);
+
+      return response()->json([
+        'success' => true,
+        'message' => 'CHANGE_PASSWORD_SUCCESS',
+        'data' => ['token' => $newToken],
+      ], 200);
+    } catch (ValidationException $e) {
+      // Map Laravel validation rules → numeric codes in config/errorcodes.php
+      $map = [
+        'REQUIRED' => config('errorcodes.REQUIRED_FIELD'),
+        'EMAIL'    => config('errorcodes.INVALID_EMAIL'),
+        'STRING'   => config('errorcodes.INVALID_FORMAT'),
+        'MIN'      => config('errorcodes.TOO_SHORT') ?? config('errorcodes.VALIDATION_ERROR'),
+        'MAX'      => config('errorcodes.TOO_LONG')  ?? config('errorcodes.VALIDATION_ERROR'),
+        'SAME'     => config('errorcodes.NOT_MATCH') ?? config('errorcodes.VALIDATION_ERROR'),
+        'REGEX'    => config('errorcodes.INVALID_FORMAT') ?? config('errorcodes.VALIDATION_ERROR'),
+      ];
+
+      $errors = [];
+      $failed = $e->validator->failed(); // field => [rule => params]
+
+      foreach ($failed as $field => $rules) {
+        foreach ($rules as $rule => $params) {
+          $key  = strtoupper($rule);
+          $code = $map[$key] ?? config('errorcodes.VALIDATION_ERROR');
+
+          $meta = [];
+          if ($key === 'MIN' && isset($params[0])) {
+            $meta['min'] = $params[0];
+          }
+          if ($key === 'MAX' && isset($params[0])) {
+            $meta['max'] = $params[0];
+          }
+
+          $errors[$field][] = [
+            'code' => $code,
+            'meta' => $meta,
+          ];
+        }
+      }
+
+      return response()->json([
+        'success' => false,
+        'message' => 'VALIDATION_FAILED',
+        'errors'  => $errors,
+      ], 422);
+    }
+  }
 }

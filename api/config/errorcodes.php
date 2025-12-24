@@ -93,6 +93,7 @@ return [
     'ACCOUNT_LOCKED'         => 2009,
 
     'OWNER_ONLY'             => 2010, // route requires owner (not staff)
+    'OLD_PASSWORD_INVALID'   => 2011,
 
     // 21xx – Google login specific
     'GOOGLE_LOGIN_FAILED'    => 2100,
