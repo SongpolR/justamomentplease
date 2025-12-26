@@ -1,5 +1,5 @@
 // web/src/main.jsx
-import React from "react";
+import React, { useEffect } from "react";
 import ReactDOM from "react-dom/client";
 import "./index.css";
 import "./i18n";
@@ -276,6 +276,14 @@ const router = createBrowserRouter([
   { path: "*", element: <NotFound /> },
 ]);
 
+export function useAppTitle() {
+  const { t, i18n } = useTranslation();
+
+  useEffect(() => {
+    document.title = t("common:app_name") + " - " + t("common:full_app_name");
+  }, [i18n.language, t]);
+}
+
 function AppRoot() {
   const [sessionExpired, setSessionExpired] = React.useState(false);
 
@@ -296,6 +304,8 @@ function AppRoot() {
       window.removeEventListener("session-expired", handleSessionExpired);
     };
   }, []);
+
+  useAppTitle();
 
   return (
     <>
