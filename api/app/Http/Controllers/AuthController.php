@@ -368,7 +368,7 @@ class AuthController extends Controller
       $resetUrl = $frontend . '/reset-password?token=' . urlencode($plain) . '&email=' . urlencode($owner->email);
       $options = [
         'appName'     => config('app.name'),
-        'expiresMinutes' => 60,),
+        'expiresMinutes' => 60,
       ];
       Mail::to($owner->email)->send(new ResetPasswordMail($resetUrl, $options));
       return response()->json([
