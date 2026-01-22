@@ -81,7 +81,7 @@ class ShopController extends Controller
       }
 
       if ($req->hasFile('logo')) {
-        $path = $req->file('logo')->store('public/logos');
+        $path = $req->file('logo')->store('logos', 'public');
         $update['logo_url'] = Storage::url($path);
       }
 

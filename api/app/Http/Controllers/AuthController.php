@@ -67,8 +67,8 @@ class AuthController extends Controller
 
         $logoUrl = null;
         if ($req->hasFile('logo')) {
-          $path    = $req->file('logo')->store('public/logos');
-          $logoUrl = Storage::url($path); // needs storage:link
+          $path    = $req->file('logo')->store('logos', 'public');
+          $logoUrl = Storage::url($path);
         }
 
         Shop::create([
