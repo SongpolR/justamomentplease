@@ -9,7 +9,6 @@
     @php
       $appName = $appName ?? config('app.name');
       $appSubtitle = $appSubtitle ?? 'app.sub_name';
-      $logoUrl = $logoUrl ?? (config('app.url') . '/app-icon.png');
       $expireHours = $expireHours ?? 72;
     @endphp
 
@@ -25,7 +24,7 @@
               <td style="padding:24px; text-align:left;">
                 <div>
                   <!-- Logo -->
-                  <div style="margin-top:2px; font-size:24px; font-weight:700; color:#4f46e5;">
+                  <div style="margin-top:2px; font-size:24px; font-weight:700; color:#4f46e5; text-align:center;">
                     JustAMomentPlease
                   </div>
                   <!-- App name -->
